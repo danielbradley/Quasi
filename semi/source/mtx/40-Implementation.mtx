@@ -1,0 +1,390 @@
+.	Implementation
+
+Version 2.0 of "semi" has been rewritten in straight C to maximise portability, and it only uses common standard libraries.
+
+~c/main.c~
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <dirent.h>
+#include <libgen.h>
+~
+
+The entire program is located in one source file 'c/main.c'.
+The following auxiliary procedures are used for house-keeping.
+
+~c/main.c~
+
+int            checkArgs( int argc, char** argv );
+int      createDirectory( int argc, char** argv );
+int                usage();
+int errorDirectoryExists();
+~
+
+While the core of the system is implemented in:
+
+~c/main.c~
+
+int           processFiles( int argc, char** argv );
+int      processSourceFile( const char* basedir, const char* filepath );
+char*             readline( FILE* stream );
+FILE*                rejig( FILE* out, const char* basedir, const char* line );
+char* generateSafeFilepath( const char* basedir, const char* line );
+int      createDirectories(       char* safeFilePath );
+char*               parent( const char* filepath );
+~
+
+..		Usage
+
+The tool is invoked using a command line that can be easily checked:
+
+~
+	semi -f BASE_DIR INPUT FILES...
+~
+
+The main procedure checks the arguments, then if it is able to also create the target directory processes all of the files specified on the command-line.
+If it isn't able to create the base directory an error is printed and the program exists with an error (-1).
+
+~c/main.c~
+
+int main( int argc, char** argv )
+{
+	if ( checkArgs( argc, argv ) ) {
+		if ( createDirectory( argc, argv ) ) {
+			return !processFiles( argc, argv );
+		}
+		else {
+			return errorDirectoryExists();
+		}
+	}
+	else {
+		return usage();
+	}
+	return 0;
+}
+~
+
+..		Checking the command-line arguments
+
+The command line must have at least three arguments (four if the first user supplied argument is '-f').
+If the force argument is supplied, the global variable *force* is set to true (1).
+
+~c/main.c~
+int force;
+
+int checkArgs( int argc, char** argv )
+{
+	int status = 0;
+	if ( argc >= 3 )
+	{
+		force = (0 == strcmp( argv[1], "-f" ));
+
+		status = force ? (argc >= 4) : (argc >= 3);
+	}
+	return status;	
+}
+~
+
+If too few arguments are passed the usage message is printed out and the program returns with an error (-1).
+
+~c/main.c~
+
+int usage()
+{
+	const char* ch = "Usage:\n\t semi [-f] BASEDIR INPUT_FILES";
+	fprintf( stderr, "%s\n", ch );
+	return -1;
+}
+~
+
+..		Creating the base directory
+
+The first user supplied argument, or second if '-f' is the first, is the name of the target base directory.
+This is the directory that new source files are created relative to.
+
+~c/main.c~
+
+int createDirectory( int argc, char** argv )
+{
+	int ret = 1;
+	const char* dirname = NULL;
+
+	if ( !force ) {
+		dirname = argv[1];
+	}
+	else {
+		dirname = argv[2];
+	}
+
+	if ( mkdir( dirname, 0755 ) )
+	{
+		switch ( errno )
+		{
+		case EEXIST:
+			ret = force;
+			break;
+		default:
+			ret = 0;
+		}
+	}
+	return ret;
+}
+~
+
+If the force ('-f') flag hasn't been passed, and the base directory already exists, "createDirectory" returns false.
+This causes the following error message to be displayed and the program exists with an error (-1).
+
+|
+	Error: directory already exists, or cannot be created!
+|
+
+~c/main.c~
+
+int errorDirectoryExists()
+{
+	const char* ch = "Error: directory already exists, or cannot be created!";
+	fprintf( stderr, "%s\n", ch );
+	return -1;
+}
+~
+
+..	Process files
+
+The main work of the program is processing each file passed by the user.
+Each argument except the target directory and force flag (if used) is passed to "processSourceFile".
+
+~c/main.c~
+
+int processFiles( int argc, char** argv )
+{
+	int status = 1;
+	{
+		int i = force ? 3 : 2;	// semi -f dir first
+		const char* target = force ? argv[2] : argv[1]; 
+
+		for ( i; i < argc; i++ )
+		{
+			status &= processSourceFile( target, argv[i] );
+		}
+	}
+	return status;
+}
+~
+
+..	Process source file
+
+This procedure processes an individual source file.
+The file stream *in* is opened for the duration of the procedure, while the *out* file stream is only opened while it is processing a pre-formatted text block.
+
+The procedure reads lines from the *in* stream, using the "readline" procedure.
+When a tilde (~) character is encountered the system either opens, or closes, *out* by calling the "rejig" function, which rejigs the *out* stream.
+Each time a stream is opened a blank line is printed to the stream -- this allows the source to have spaces between chunks, while not having kludge whitespace in pre-formatted text blocks.
+
+When a tilde character doesn't start the line and the *out* stream is an open (not NULL) stream, the line is written out to the stream.
+
+~c/main.c~
+
+int processSourceFile( const char* target, const char* filepath )
+{
+	fprintf( stdout, "Processing: %s\n", filepath );
+
+	FILE* in   = fopen( filepath, "r" );
+	FILE* out  = NULL;
+
+	char* line;
+	while ( (line = readline( in )) )
+	{
+		if ( '~' == line[0] ) {
+			out = rejig( out, target, line );
+			if ( out ) fprintf( out, "\n", line );
+		}
+		else if ( out )
+		{
+			fprintf( out, "%s", line );
+		}
+	}
+	fclose( in );
+	fclose( out );
+
+	return (out == NULL);
+}
+~
+
+..		readline
+
+The "readline" procedure reads individual characters into a character buffer --
+each character is appended to the char string "line".
+When a newline character is encountered "line" is returned.
+When the stream is empty a NULL is returned.
+
+~c/main.c~
+
+char* readline( FILE* stream )
+{
+	int  n = 0;
+	char ch[2] = { 0, 0 };
+	char* line = calloc( 1024, sizeof( char ) );
+
+	int read;
+	do
+	{
+		read = fread( ch, sizeof(char), 1, stream );
+		if ( read )
+		{
+			switch ( *ch )
+			{
+			case '\n':
+				line[n++] = *ch;
+				read = 0;
+				break;
+			default:
+				line[n++] = *ch;
+			}
+		}
+	}
+	while ( 0 != read );
+
+	if ( 0 == n )
+	{
+		free( line );
+		line = NULL;
+	}
+
+	return line;
+}
+~
+
+..	Rejig file output
+
+This procedure determines whether the passed line contains a valid filename by calling "generateSafeFilepath", then creates any required directories, then opens and returns an appropriate file stream.
+
+~c/main.c~
+
+FILE* rejig( FILE* out, const char* basedir, const char* line )
+{
+	FILE* ret = NULL;
+
+	if ( out )
+	{
+		fclose( out );
+	}
+	{
+		char* safeFilePath = generateSafeFilepath( basedir, line );
+		if ( safeFilePath && createDirectories( parent( safeFilePath ) ) )
+		{
+			ret = fopen( safeFilePath, "a" );
+		}
+		free( safeFilePath );
+	}
+
+	return ret;
+}
+~
+
+..	Generate safe filepath
+
+The "generateSafeFilepath" procedure attempts to produce a safe file path from combining the base-dir with a file path extracted from the passed line.
+The passed line starts with a tilde character, but may have anything else as well.
+
+First the line is checked to make sure it doesn't include '..', which would allow accessing paths above the base dir.
+Next 'strtok' is used to tokenise the line using the tilde as a delimiter.
+The first token returned is treated as the filename -- first it is checked to make sure it is alpha-numerical chacter (indicating an appropraite filename), then strtok is called again to verify that the token is trailed by another tilde.
+
+If there are any problems NULL is returned.
+
+~c/main.c~
+
+char* generateSafeFilepath( const char* basedir, const char* line )
+{
+	char* full = NULL;
+	{
+		int len = strlen( basedir ) + strlen( line ) + 2;
+		if ( NULL == strstr( line, ".." ) )
+		{
+			char test[len];
+			strcpy( test, line );
+			char* token = strtok( test, "~" );
+			if ( token && isalnum( token[0] ) )
+			{
+				full = calloc( len, sizeof( char ) );
+				strcpy( full, basedir );
+				strcat( full, "/" );
+				strcat( full, token );
+
+				if ( NULL == strtok( NULL, "~" ) )
+				{
+					free( full );
+					full = NULL;
+				}
+			}
+
+		}
+	}
+	return full;
+}
+~
+
+..	Create directories
+
+This is a recursive procedure that finds the first existing directory, then unwinds creating the necessary directories.
+
+~c/main.c~
+
+int createDirectories( char* dir )
+{
+	int success = 1;
+	if ( ! directory_exists( dir ) )
+	{
+		if ( createDirectories( parent( dir ) ) )
+		{
+			success = ! mkdir( dir, 0755 );
+		}
+	}
+	free( dir );
+	return success;
+}
+~
+
+..	Directory exists
+
+A simple procedure that determines whether a directory exists or not.
+
+~c/main.c~
+
+int directory_exists( const char* path )
+{
+	int status = 0;
+	DIR* dir = opendir( path );
+	if ( dir )
+	{
+		closedir( dir );
+		status = 1;
+	}
+	return status;
+}
+~
+
+..	Parent
+
+A simple wrapper around "dirname" that allocates and returns char string.
+
+~c/main.c~
+
+char* parent( const char* filepath )
+{
+	char* ret = calloc( strlen( filepath ) + 1, sizeof( char ) );
+	{
+		strcpy( ret, filepath );
+		strcpy( ret, dirname( ret ) );
+	}
+	return ret;
+}
+~
+
+
+
+
+

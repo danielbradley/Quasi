@@ -1,0 +1,22 @@
+.	Concept
+
+Similar to "extract", "semi" extracts sections of pre-formatted text from documentation and appends it to target text files.
+Unlike "extract" rather than matching a supplied pattern, the identifier in the pre-formatted text section is used as the file path of the target file relative to a user supplied base directory.
+
+For example, the following command would extract the following block of source code and append it to the file 'source/c/semi.c'.
+
+~
+	semi source source/mtx/semi.mtx
+~
+
+~
+	~c/semi.c~
+	int main( int argc, char** argv )
+	{
+		return 0;
+	}
+	~
+~
+
+The tool does some sanitation of the filenames, checking that parent directory ('..') commands aren't included, ensuring output files remain under the specified base directory.
+

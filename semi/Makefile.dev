@@ -1,0 +1,23 @@
+all: dirs legacy doc src build
+
+dirs:
+	mkdir -p bin
+	mkdir -p libexec
+	mkdir -p documentation/{html,pdf,tex}
+
+legacy:
+	gcc -o libexec/semi source/legacy/main.c
+
+doc:
+	max2tex  --out documentation/tex/semi  source/mtx/*.mtx
+	max2html --out documentation/html/semi source/mtx/*.mtx
+
+src:
+	rm -rf source/c
+	libexec/semi -f source source/mtx/*.mtx
+
+build:
+	gcc -g -o bin/semi source/c/main.c
+
+clean:
+	rm -rf bin documentation libexec source/c

@@ -1,0 +1,12 @@
+.	Introduction
+
+Knuth coined the term "literate programming" and developed the "Web" tool to develop Tex using literate programming.
+A key aspect of literate programming is that user readable documentation is the primary output of the programmer -- though this may be converted into different forms, e.g., Latex, PDF, HTML.
+Actual source code is /weaved/ into appropriate sections that explain in detail the rationale and working of the software.
+Knuth's thesis was that software should be written as a flow of thought.
+
+From my perspective, a major problem with Knuth's method of literate programming is that the tools are too powerful --
+code is written using novel new macro style that requires the programmer to debug the macro language as well as the code they are trying to write.
+Additionally, the macro language obfuscates the code that is being written by replacing crucial parts with macro identifiers.
+
+Semi -- the tool that this paper describes allows software to be developed in the spirit of Knuth's literate programming, but by providing a less powerful tool, also simplifies the process from the perspective of the programmer.
