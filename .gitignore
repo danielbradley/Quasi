@@ -2,3 +2,4 @@ bin
 obj
 ._*
 .DS_Store
+semi-*
