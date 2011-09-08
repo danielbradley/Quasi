@@ -3,3 +3,5 @@ obj
 ._*
 .DS_Store
 semi-*
+libexec
+c

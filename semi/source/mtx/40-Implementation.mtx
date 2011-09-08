@@ -207,7 +207,7 @@ int processSourceFile( const char* target, const char* filepath )
 		}
 	}
 	fclose( in );
-	fclose( out );
+	if ( out ) fclose( out );
 
 	return (out == NULL);
 }
