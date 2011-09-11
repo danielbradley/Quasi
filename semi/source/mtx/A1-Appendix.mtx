@@ -1,0 +1,116 @@
+,	Appendix A
+
+Semi uses the following generic auxiliary functions.
+
+..	Create directories
+
+This is a recursive procedure that finds the first existing directory, then unwinds creating the necessary directories.
+
+~c/main.c~
+int createDirectories( char* dir )
+{
+	int success = 1;
+	if ( ! directory_exists( dir ) )
+	{
+		if ( createDirectories( parentDirectory( dir ) ) )
+		{
+			success = ! mkdir( dir, 0755 );
+		}
+	}
+	free( dir );
+	return success;
+}
+~
+
+..	Directory exists
+
+A simple procedure that determines whether a directory exists or not.
+
+~c/main.c~
+int directory_exists( const char* path )
+{
+	int status = 0;
+	DIR* dir = opendir( path );
+	if ( dir )
+	{
+		closedir( dir );
+		status = 1;
+	}
+	return status;
+}
+~
+
+..	Parent directory
+
+A simple wrapper around "dirname" that allocates and returns a string.
+
+~c/main.c~
+char* parentDirectory( const char* filepath )
+{
+	char* ret = calloc( strlen( filepath ) + 1, sizeof( char ) );
+	{
+		strcpy( ret, filepath );
+		strcpy( ret, dirname( ret ) );
+	}
+	return ret;
+}
+~
+
+..		Read line
+
+The "readline" procedure reads individual characters into a character buffer --
+each character is appended to the char string "line".
+When a newline character is encountered "line" is returned.
+When the stream is empty a NULL is returned.
+
+~c/main.c~
+char* readline( FILE* stream )
+{
+	int  n = 0;
+	char ch[2] = { 0, 0 };
+	char* line = calloc( 1024, sizeof( char ) );
+
+	int read;
+	do
+	{
+		read = fread( ch, sizeof(char), 1, stream );
+		if ( read )
+		{
+			switch ( *ch )
+			{
+			case '\n':
+				line[n++] = *ch;
+				read = 0;
+				break;
+			default:
+				line[n++] = *ch;
+			}
+		}
+	}
+	while ( 0 != read );
+
+	if ( 0 == n )
+	{
+		free( line );
+		line = NULL;
+	}
+
+	return line;
+}
+~
+
+..		String copy
+
+Returns a copy of the passed string.
+
+~c/main.c~
+char* stringCopy( const char* aString )
+{
+	char* copy = calloc( strlen( aString) + 1, sizeof( char ) );
+	strcpy( copy, aString );
+	return copy;
+}
+~
+
+
+

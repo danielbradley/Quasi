@@ -1,0 +1,627 @@
+<html>
+<head>
+<style type='text/css'>
+BODY {}DIV.document {}DIV.text { width:718px; width:550px; margin-left:auto; margin-right:auto; }DIV.text { padding: 25; border: none; }P.title1 { font-size: large; text-align: center;  }P.title2 { font-size: medium; text-align: center; }H1 { font-family: helvetica; font-size: medium; padding-top:30px; }H2 { font-family: helvetica; font-size: small; padding-top:15px; }H3 { padding-left: 0; font-family: helvetica; font-weight: normal; font-size: small; font-style: italic }H4 { padding-left: 0; font-family: helvetica; font-weight: normal; font-size: smaller; font-style: normal; font-variant: small-caps; }H5 { padding-left: 0; font-family: helvetica; font-weight: normal; font-size: smaller; font-style: normal; font-variant: small-caps; }UL  { font-family: helvetica; font-size: small; margin-left: 10; text-align: justify; margin-right: 150; }OL  { font-family: helvetica; font-size: small; margin-left: 10; text-align: justify; margin-right: 150; }P  { font-family: helvetica; font-size: small; margin-left: 10; text-align: justify; }P.paragraph { font-family: helvetica; font-size: small; margin-left: 0; margin-right: 0; text-align: justify; }B  { color: black; }A  { text-decoration: none; }A:visited { text-decoration: none; }PRE { font-family: courier; font-size: 8pt; margin-left: 20 }BLOCKQUOTE{	width: 565;	color: #333;	font-family: times;	font-size: small;	line-height: 150%;	text-align: justify;}P.marginnote{	width: 100;	float: right;}TD { padding: 20; }TD.bibkey { padding: 0 }TD.reference {padding: 0 }
+</style>
+</head>
+<body>
+<div class='document'>
+<div class='text'>
+<p class='title1'>	Semi - a tool for semi-literate programming</p>
+<p class='title2'>	Daniel Bradley</p>
+<h1>	Copyright</h1>
+<p class='paragraph'>
+Copyright 2011, Daniel Robert Bradley.
+</p>
+<h1>	License</h1>
+<p class='paragraph'>
+This software is released under the terms of the GPLv3.
+</p>
+<p class='paragraph'>
+Download from:
+</p>
+<pre>
+http://www.crossadaptive.com/download/Semi/semi-1.0.tar.bz2
+</pre>
+<h1>	Source</h1>
+<p class='paragraph'>
+View source:
+</p>
+<pre>
+http://semiliterateprogramming.org/semi.txt
+</pre>
+<h1>	Disclaimer</h1>
+<p class='paragraph'>
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+</p>
+<h1>	Introduction</h1>
+<p class='paragraph'>
+Donald Knuth coined the term "literate programming" to refer to a programming approach whereby a programmer develops a program "in the order demanded by logic and flow of their thoughts" [<a href='#Wikipedia' title='Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming'>1</a>].
+The programmer produces human language prose in a flow intended to be best promote understanding, the a reader, of encoded code fragments embedded within the text.
+</p>
+<p class='paragraph'>
+Tools can then be used to produce reader friendly documentation <i>woven</i> from the source, as well as executable/compilable <i>tangled</i>.
+Knuth's original tool was called "Web" [<a href='#Web' title='The CWEB System of Structured Documentation http://www-cs-faculty.stanford.edu/~uno/cweb.html'>2</a>], however other tools have since been developed that are language-agnostic [<a></a>].
+</p>
+<p class='paragraph'>
+The following code fragment from the literate programming Wikipedia page demonstrates how the web system worked [<a href='#Wikipedia' title='Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming'>1</a>].
+The text "<<Scan File>>=" defines a <i>macro</i> that has associated with it the code following.
+</p>
+<pre>
+	&lt;&lt;Scan file&gt;&gt;=
+	while (1) {
+		&lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
+		c = *ptr++;
+		if ( c &gt; ' ' && c &lt; 0177 ) {
+			/* visible ASCII codes */
+			if ( !in_word) {
+				word_count++;
+				in_word = 1;
+			}
+			continue;
+		}
+		if ( c == '\n' ) line_count++;
+		else if ( c != ' ' && c != '\t') continue;
+		in_word = 0;
+			/* c is newline, space, or tab */
+	}
+	@
+</pre>
+<p class='paragraph'>
+The macro "<<Scan File>>" could then be used in any other code <i>chunk</i>.
+</p>
+<p class='paragraph'>
+A problem with such an approach is the possibility that the while a reader think they understand the code they are reading, it may be the case that they are not noticing a specific interaction between various code chucks.
+It would be necessary for the reader to reference the <i>tangled</i> code, in order to be sure they are properly understanding interactions with the system.
+</p>
+<p class='paragraph'>
+A related problem is that the system does not impose any limitations on to what degree macros are used.
+The system provides the ability for code to be intermixed in arbitrary ways.
+Software developed using the system may become increasingly hard to maintain as others are forced edit the source files.
+</p>
+<p class='paragraph'>
+The paper describes Semi, a tool for semi-literate programming.
+It has been developed in the spirit of Knuth's literate programming but, by providing a far less powerful tool, it also simplifies the process from the perspective of a maintenance programmer.
+</p>
+<h1>	Background</h1>
+<p class='paragraph'>
+While this tool was inspired by literate programming, it is derived from an earlier tool called "extract" that is used for extracting SQL definitions from web-application requirements documents for using in database initialise scripts.
+The tool would scan text files and extract the text of pre-formatted sections that matched a user supplied pattern.
+</p>
+<p class='paragraph'>
+For example, this command would extract the following block of SQL:
+</p>
+<pre>
+extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
+</pre>
+<pre>
+	~users_table~
+	CREATE TABLE users
+	(
+	USER        INT(11)  NOT NULL AUTO_INCREMENT
+	PRIMARY KEY (USER)
+	);
+	~
+</pre>
+<p class='paragraph'>
+This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within the requirements document.
+This provided the motivation for developing a similar tool to also extract source code from documentation.
+</p>
+<h1>	Concept</h1>
+<p class='paragraph'>
+Similar to "extract", "semi" extracts sections of pre-formatted text from documentation and appends it to <i>target</i> text files.
+Unlike "extract" rather than matching a supplied pattern, the <i>identifier</i> in the pre-formatted text section is used as the file path of the target file relative to a user supplied base directory.
+</p>
+<p class='paragraph'>
+For example, this command would extract the following block of source code and append it to the file 'source/c/semi.c':
+</p>
+<pre>
+	semi source source/mtx/semi.mtx
+</pre>
+<pre>
+	~c/semi.c~
+	int main( int argc, char** argv )
+	{
+		return 0;
+	}
+	~
+</pre>
+<p class='paragraph'>
+The tool does sanitation of the filenames, ensuring that parent directory ('..') commands aren't included and therefore that output files remain under the specified base directory.
+If the specified base directory already exists the tool will exit with an error, unless the '-f' flag is passed as the first command argument.
+</p>
+<pre>
+	semi -f source source/mtx/semi.mtx
+</pre>
+<p class='paragraph'>
+If the identifier of the pre-formatted block section is prefixed by an exclamation mark the file is truncated on opening.
+It is advisable that when a file is truncated in this manner that the code fragment be a comment warning that the file is generated:
+</p>
+<pre>
+	~!c/semi.c~
+	/*   !!!   Warning this file is auto-generated   !!!   */
+	~
+</pre>
+<p class='paragraph'>
+Semi is implemented to process text files that use the MaxText text format [<a></a>].
+If certain code fragments are not desired in the output documentation they can be commented using the standard MaxText commenting character, but will still be processed properly by Semi.
+This is useful for hiding code comments, or perhaps includes.
+</p>
+<pre>
+	!
+	Include various standard includes.
+
+	~!c/semi.c!~
+	#include &lt;stdio.h&gt;
+	#include &lt;stdlib.h&gt;
+	#include &lt;string.h&gt;
+	~
+	!
+</pre>
+<p class='paragraph'>
+The key difference between literate programming tools and Semi is that Semi forces the programmer to construct all target source files in a linear fashion.
+However, as files may be constructed in parallel.
+It is thought that the key benefit of this approach is that it will enable programmers to better modularise their software as their is very little overhead in creating new files.
+</p>
+<h1>	Example: semi implementation</h1>
+<p class='paragraph'>
+Semi has now been reimplemented using an earlier version of semi.
+This version has been rewritten in pure C to maximise portability, allowing it to act as the foundation of an organisation's development tool set.
+</p>
+<h2>		Invocation</h2>
+<p class='paragraph'>
+To ensure simplicity of implementation, Semi is invoked with a simple command-line.
+</p>
+<pre>
+	semi [-f] BASE_DIR INPUT_FILES...
+</pre>
+<p class='paragraph'>
+The <i>BASE DIR</i> argument specifies the directory that target files are created relative to -- if the <i>BASE DIR</i> already exists Semi exits returning an error unless the '-f' flag is passes as the first argument.
+After the <i>BASE DIR</i> one or more input files are specified for parsing.
+</p>
+<h2>		Overview</h2>
+<p class='paragraph'>
+The function declarations below show the overall structure of Semi.
+First the arguments are processed (*processArguments*) and if valid the base directory is verified (*canAccessBaseDirectory*) and created if needed.
+Each of the command-line arguments corresponding to the source files are then processed (*processSourceFile*).
+During processing the output files are opened and closed (*rejig*) as necessary.
+Each time a target file is created the filename must be appropriately sanitised (*generateSafeFilepath*), and it must be determined whether to truncate the file or not (*doWeTruncate*).
+</p>
+<pre>
+int        processArguments( int argc, const char** argv );
+int  canAccessBaseDirectory( const char* baseDir, int forced );
+int      processSourceFiles( const char* baseDir, int first, int last, const char** files );
+FILE*                 rejig( FILE* out, const char* baseDir, const char* line );
+char*  generateSafeFilepath( const char* basedir, const char* line );
+int            doWeTruncate( const char* line );
+</pre>
+<p class='paragraph'>
+If in appropriate arguments are passed Semi prints a usage message (*usage*) and exits with an error (-1).
+Similarly if the <i>base dir</i> directory already exists Semi prints an error message (*errorDirectoryExists*) and exists with an error (-1).
+</p>
+<pre>
+int                   usage();
+int    errorDirectoryExists();
+</pre>
+<p class='paragraph'>
+The following utility functions are also used (these are described in the appendix).
+</p>
+<pre>
+int       createDirectories(       char* safeFilePath );
+int         directoryExists( const char* path );
+char*       parentDirectory( const char* filepath );
+char*              readline( FILE* stream );
+char*            stringCopy( const char* aString );
+</pre>
+<p class='paragraph'>
+During argument processing the following global variables are initialised.
+<i>FORCE</i> is initialised as true (1) if the '-f' flag was passed; FIRST is initialised to indicate the first source file argument in <i>argv</i>; and <i>BASE_DIR</i> is initialised to the base directory argument.
+</p>
+<pre>
+int         FORCE;
+int         FIRST;
+const char* BASE_DIR;
+</pre>
+<p class='paragraph'>
+The main function acts as a coordinator, calling the appropriate functions as needed.
+</p>
+<pre>
+int main( int argc, const char** argv )
+{
+	int status = 0;
+
+	if ( processArguments( argc, argv ) )
+	{
+		if ( canAccessDirectory( BASE_DIR, FORCE ) )
+		{
+			int last = argc - 1;
+			status = processSourceFiles( BASE_DIR, FIRST, last, argv );
+		}
+		else
+		{
+			status = errorDirectoryExists();
+		}
+	}
+	else
+	{
+		status = usage();
+	}
+	return !status;
+}
+</pre>
+<h2>		Argument processing</h2>
+<p class='paragraph'>
+If the minimum expected number of arguments is supplied the arguments are processed.
+If the force argument is supplied, the global variable <i>FORCE</i> is set to true (1);
+then the global variable <i>BASE_DIR</i> is initialised to the next argument.
+Finally, if there is at least one file argument remaining, the global variable <i>FIRST</i> is initialised to identify it and the function will returns true (1).
+</p>
+<pre>
+int processArguments( int argc, const char** argv )
+{
+	int status             = 0;
+	int expected_arguments = 3;
+	int i                  = 1;
+
+	if ( argc &gt;= expected_arguments )
+	{
+		if ( 0 == strcmp( argv[i], "-f" ) )
+		{
+			expected_arguments++;
+			i++;
+			FORCE = 1;
+		}
+		BASE_DIR = argv[i]; i++;
+		FIRST    = i;
+		status   = ( argc &gt;= expected_arguments );
+	}
+	return status;	
+}
+</pre>
+<h2>		Accessing the base directory</h2>
+<p class='paragraph'>
+It is attempted to create the base directory.
+If this succeeds success is returned (1), else failure is returned (0), unless the force argument is true.
+</p>
+<pre>
+int canAccessDirectory( const char* baseDir, int force )
+{
+	int status = 0;
+
+	if ( mkdir( baseDir, 0755 ) )
+	{
+		switch ( errno )
+		{
+		case EEXIST:
+			status = force;
+			break;
+		default:
+			status = 1;
+		}
+	}
+	return status;
+}
+</pre>
+<h2>		Processing the source files</h2>
+<p class='paragraph'>
+For each source file the <b>processFile</b> function is called passing the <i>baseDir</i> and the <i>source file</i>.
+</p>
+<pre>
+
+int processSourceFiles( const char* baseDir, int first, int last, const char** files )
+{
+	int status = 1;
+	int i;
+	for ( i=first; i &lt;= last; i++ )
+	{
+		status &= processFile( baseDir, files[i] );
+	}
+	return status;
+}
+</pre>
+<h3>			Processing a file</h3>
+<p class='paragraph'>
+This procedure processes an individual source file.
+The file stream <b>in</b> is opened for the duration of the procedure, while the <b>out</b> file stream is only opened while it is processing a pre-formatted text block.
+</p>
+<p class='paragraph'>
+The procedure reads lines from the <b>in</b> stream, using the "readline" procedure.
+When a tilde (~) character is encountered the system either opens, or closes, <b>out</b> by calling the "rejig" function, which rejigs the <b>out</b> stream.
+Each time a stream is closed a blank line is printed to the stream -- this allows the source to have spaces between chunks, while not having kludge whitespace in pre-formatted text blocks.
+</p>
+<p class='paragraph'>
+When a tilde character doesn't start the line and the <b>out</b> stream is an open (not NULL) stream, the line is written out to the stream.
+</p>
+<p class='paragraph'>
+At the end of the while loop if the <i>out</i> file stream is not null it indicates that the previous pre-formatted block wasn't closed properly.
+This causes a warning message to be printed to <i>stderr</i> and function returns false.
+</p>
+<pre>
+int processFile( const char* baseDir, const char* sourceFile )
+{
+	fprintf( stdout, "Processing: %s\n", sourceFile );
+
+	FILE* in   = fopen( sourceFile, "r" );
+	FILE* out  = NULL;
+
+	char* line;
+	while ( (line = readline( in )) )
+	{
+		if ( '~' == line[0] ) {
+			out = rejig( out, baseDir, line );
+			if ( out ) fprintf( out, "\n", line );
+		}
+		else if ( out )
+		{
+			fprintf( out, "%s", line );
+		}
+	}
+	fclose( in );
+
+	if ( out )
+	{
+		fclose( out );
+		fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
+	}
+	return (out == NULL);
+}
+</pre>
+<h3>			Rejig file output</h3>
+<p class='paragraph'>
+This function determines whether the passed line contains a valid filename by calling "generateSafeFilepath", then creates any required directories, then opens and returns an appropriate file stream.
+</p>
+<pre>
+FILE* rejig( FILE* out, const char* basedir, const char* line )
+{
+	FILE* ret = NULL;
+
+	if ( out ) fclose( out );
+
+	char* safeFilePath = generateSafeFilepath( basedir, line );
+	if ( safeFilePath && createDirectories( parentDirectory( safeFilePath ) ) )
+	{
+		if ( doWeTruncate( line ) )
+		{
+			ret = fopen( safeFilePath, "w" );
+		}
+		else
+		{
+			ret = fopen( safeFilePath, "a" );
+		}
+	}
+	free( safeFilePath );
+
+	return ret;
+}
+</pre>
+<h3>			Generation of the safe filepath</h3>
+<p class='paragraph'>
+The "generateSafeFilepath" procedure attempts to produce a safe file path from combining the base-dir with a file path extracted from the passed line.
+The passed line starts with a tilde character, but may have anything else as well.
+</p>
+<p class='paragraph'>
+First the line is checked to make sure it doesn't include '..', which would allow accessing paths above the base dir.
+Next 'strtok' is used to tokenise the line using the tilde as a delimiter.
+The first token returned is treated as the filename -- first it is checked to make sure it is alpha-numerical chacter (indicating an appropraite filename), then strtok is called again to verify that the token is trailed by another tilde.
+</p>
+<p class='paragraph'>
+If there are any problems NULL is returned.
+</p>
+<pre>
+
+char* generateSafeFilepath( const char* basedir, const char* line )
+{
+	char* full = NULL;
+	{
+		int len = strlen( basedir ) + strlen( line ) + 1;
+		if ( NULL == strstr( line, ".." ) )
+		{
+			char* test  = stringCopy( line );	
+			char* token = strtok( test, "~" );
+
+			if ( '!' == token[0] ) token++;
+
+			if ( token && isalnum( token[0] ) )
+			{
+				full = calloc( len, sizeof( char ) );
+				strcpy( full, basedir );
+				strcat( full, "/" );
+				strcat( full, token );
+
+				if ( NULL == strtok( NULL, "~" ) )
+				{
+					free( full );
+					full = NULL;
+				}
+			}
+			free( test );
+		}
+	}
+	return full;
+}
+</pre>
+<h3>			Truncation</h3>
+<p class='paragraph'>
+The output file should be truncated if the source file name is proceeded by an exclamation mark.
+</p>
+<pre>
+int doWeTruncate( const char* line )
+{
+	int truncate = 0;
+	if ( 2 &lt; strlen( line ) )
+	{
+		truncate = ('!' == line[1]);
+	}
+	return truncate;
+}
+</pre>
+<h2>		Error messages</h2>
+<h3>			Incorrect arguments</h3>
+<p class='paragraph'>
+If the program is invoked without the appropriate arguments the following usage message is printed to <i>stderr</i>.
+</p>
+<pre>
+Usage:
+	semi [-f] BASE_DIR INPUT_FILES
+</pre>
+<pre>
+int usage()
+{
+	const char* ch = "Usage:\n\t semi [-f] BASE_DIR INPUT_FILES";
+	fprintf( stderr, "%s\n", ch );
+	return -1;
+}
+</pre>
+<h3>			Directory already exists</h3>
+<p class='paragraph'>
+If the force ('-f') flag hasn't been passed, and the base directory already exists the following error message is printed to <i>stderr</i>.
+</p>
+<pre>
+	Error: directory already exists, or cannot be created!
+</pre>
+<pre>
+int errorDirectoryExists()
+{
+	const char* ch = "Error: directory already exists, or cannot be created!";
+	fprintf( stderr, "%s\n", ch );
+	return -1;
+}
+</pre>
+<h1>	Future Work</h1>
+<p class='paragraph'>
+In the future we plan to rewrite and release our other open source projects, such as MaxText and Build, using Semi.
+</p>
+<h1>	Appendix A</h1>
+<p class='paragraph'>
+Semi uses the following generic auxiliary functions.
+</p>
+<h2>	Create directories</h2>
+<p class='paragraph'>
+This is a recursive procedure that finds the first existing directory, then unwinds creating the necessary directories.
+</p>
+<pre>
+int createDirectories( char* dir )
+{
+	int success = 1;
+	if ( ! directory_exists( dir ) )
+	{
+		if ( createDirectories( parentDirectory( dir ) ) )
+		{
+			success = ! mkdir( dir, 0755 );
+		}
+	}
+	free( dir );
+	return success;
+}
+</pre>
+<h2>	Directory exists</h2>
+<p class='paragraph'>
+A simple procedure that determines whether a directory exists or not.
+</p>
+<pre>
+int directory_exists( const char* path )
+{
+	int status = 0;
+	DIR* dir = opendir( path );
+	if ( dir )
+	{
+		closedir( dir );
+		status = 1;
+	}
+	return status;
+}
+</pre>
+<h2>	Parent directory</h2>
+<p class='paragraph'>
+A simple wrapper around "dirname" that allocates and returns a string.
+</p>
+<pre>
+char* parentDirectory( const char* filepath )
+{
+	char* ret = calloc( strlen( filepath ) + 1, sizeof( char ) );
+	{
+		strcpy( ret, filepath );
+		strcpy( ret, dirname( ret ) );
+	}
+	return ret;
+}
+</pre>
+<h2>		Read line</h2>
+<p class='paragraph'>
+The "readline" procedure reads individual characters into a character buffer --
+each character is appended to the char string "line".
+When a newline character is encountered "line" is returned.
+When the stream is empty a NULL is returned.
+</p>
+<pre>
+char* readline( FILE* stream )
+{
+	int  n = 0;
+	char ch[2] = { 0, 0 };
+	char* line = calloc( 1024, sizeof( char ) );
+
+	int read;
+	do
+	{
+		read = fread( ch, sizeof(char), 1, stream );
+		if ( read )
+		{
+			switch ( *ch )
+			{
+			case '\n':
+				line[n++] = *ch;
+				read = 0;
+				break;
+			default:
+				line[n++] = *ch;
+			}
+		}
+	}
+	while ( 0 != read );
+
+	if ( 0 == n )
+	{
+		free( line );
+		line = NULL;
+	}
+
+	return line;
+}
+</pre>
+<h2>		String copy</h2>
+<p class='paragraph'>
+Returns a copy of the passed string.
+</p>
+<pre>
+char* stringCopy( const char* aString )
+{
+	char* copy = calloc( strlen( aString) + 1, sizeof( char ) );
+	strcpy( copy, aString );
+	return copy;
+}
+</pre>
+<h1>	Bibliography</h1>
+<table class='references'>
+<tr>
+<td class='bibkey'><a name='Wikipedia' />[1]</td>
+<td class='reference'><p class='Reference'>
+	Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming
+</p>
+</td>
+<tr>
+<td class='bibkey'><a name='Web' />[2]</td>
+<td class='reference'><p class='Reference'>
+		The CWEB System of Structured Documentation http://www-cs-faculty.stanford.edu/~uno/cweb.html
+</p>
+</td>
+<tr>
+<td class='bibkey'><a name='XXX' />[3]</td>
+<td class='reference'><p class='Reference'>
+		Noweb - A Simple, Extensible Tool for Literate Programming http://www.cs.tufts.edu/~nr/noweb/
+</p>
+</td>
+</table>
+</div>
+</div>
+</body>
+</html>

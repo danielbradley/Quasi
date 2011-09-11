@@ -1,0 +1,344 @@
+.	Example: semi implementation
+
+Semi has now been reimplemented using an earlier version of semi.
+This version has been rewritten in pure C to maximise portability, allowing it to act as the foundation of an organisation's development tool set.
+
+!
+~c/main.c~
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <dirent.h>
+#include <libgen.h>
+~
+!
+
+..		Invocation
+
+To ensure simplicity of implementation, Semi is invoked with a simple command-line.
+
+~
+	semi [-f] BASE_DIR INPUT_FILES...
+~
+
+The /BASE DIR/ argument specifies the directory that target files are created relative to -- if the /BASE DIR/ already exists Semi exits returning an error unless the '-f' flag is passes as the first argument.
+After the /BASE DIR/ one or more input files are specified for parsing.
+
+..		Overview
+
+The function declarations below show the overall structure of Semi.
+First the arguments are processed (*processArguments*) and if valid the base directory is verified (*canAccessBaseDirectory*) and created if needed.
+Each of the command-line arguments corresponding to the source files are then processed (*processSourceFile*).
+During processing the output files are opened and closed (*rejig*) as necessary.
+Each time a target file is created the filename must be appropriately sanitised (*generateSafeFilepath*), and it must be determined whether to truncate the file or not (*doWeTruncate*).
+
+~c/main.c~
+int        processArguments( int argc, const char** argv );
+int  canAccessBaseDirectory( const char* baseDir, int forced );
+int      processSourceFiles( const char* baseDir, int first, int last, const char** files );
+FILE*                 rejig( FILE* out, const char* baseDir, const char* line );
+char*  generateSafeFilepath( const char* basedir, const char* line );
+int            doWeTruncate( const char* line );
+~
+
+If in appropriate arguments are passed Semi prints a usage message (*usage*) and exits with an error (-1).
+Similarly if the /base dir/ directory already exists Semi prints an error message (*errorDirectoryExists*) and exists with an error (-1).
+
+~c/main.c~
+int                   usage();
+int    errorDirectoryExists();
+~
+
+The following utility functions are also used (these are described in the appendix).
+
+~c/main.c~
+int       createDirectories(       char* safeFilePath );
+int         directoryExists( const char* path );
+char*       parentDirectory( const char* filepath );
+char*              readline( FILE* stream );
+char*            stringCopy( const char* aString );
+~
+
+During argument processing the following global variables are initialised.
+/FORCE/ is initialised as true (1) if the '-f' flag was passed; FIRST is initialised to indicate the first source file argument in /argv/; and /BASE_DIR/ is initialised to the base directory argument.
+
+~c/main.c~
+int         FORCE;
+int         FIRST;
+const char* BASE_DIR;
+~
+
+The main function acts as a coordinator, calling the appropriate functions as needed.
+
+~c/main.c~
+int main( int argc, const char** argv )
+{
+	int status = 0;
+
+	if ( processArguments( argc, argv ) )
+	{
+		if ( canAccessDirectory( BASE_DIR, FORCE ) )
+		{
+			int last = argc - 1;
+			status = processSourceFiles( BASE_DIR, FIRST, last, argv );
+		}
+		else
+		{
+			status = errorDirectoryExists();
+		}
+	}
+	else
+	{
+		status = usage();
+	}
+	return !status;
+}
+~
+
+
+..		Argument processing
+
+
+If the minimum expected number of arguments is supplied the arguments are processed.
+If the force argument is supplied, the global variable /FORCE/ is set to true (1);
+then the global variable /BASE_DIR/ is initialised to the next argument.
+Finally, if there is at least one file argument remaining, the global variable /FIRST/ is initialised to identify it and the function will returns true (1).
+
+~c/main.c~
+int processArguments( int argc, const char** argv )
+{
+	int status             = 0;
+	int expected_arguments = 3;
+	int i                  = 1;
+
+	if ( argc >= expected_arguments )
+	{
+		if ( 0 == strcmp( argv[i], "-f" ) )
+		{
+			expected_arguments++;
+			i++;
+			FORCE = 1;
+		}
+		BASE_DIR = argv[i]; i++;
+		FIRST    = i;
+		status   = ( argc >= expected_arguments );
+	}
+	return status;	
+}
+~
+
+
+..		Accessing the base directory
+
+It is attempted to create the base directory.
+If this succeeds success is returned (1), else failure is returned (0), unless the force argument is true.
+
+~c/main.c~
+int canAccessDirectory( const char* baseDir, int force )
+{
+	int status = 0;
+
+	if ( mkdir( baseDir, 0755 ) )
+	{
+		switch ( errno )
+		{
+		case EEXIST:
+			status = force;
+			break;
+		default:
+			status = 1;
+		}
+	}
+	return status;
+}
+~
+
+..		Processing the source files
+
+For each source file the *processFile* function is called passing the /baseDir/ and the /source file/.
+
+~c/main.c~
+
+int processSourceFiles( const char* baseDir, int first, int last, const char** files )
+{
+	int status = 1;
+	int i;
+	for ( i=first; i <= last; i++ )
+	{
+		status &= processFile( baseDir, files[i] );
+	}
+	return status;
+}
+~
+
+...			Processing a file
+
+This procedure processes an individual source file.
+The file stream *in* is opened for the duration of the procedure, while the *out* file stream is only opened while it is processing a pre-formatted text block.
+
+The procedure reads lines from the *in* stream, using the "readline" procedure.
+When a tilde (~) character is encountered the system either opens, or closes, *out* by calling the "rejig" function, which rejigs the *out* stream.
+Each time a stream is closed a blank line is printed to the stream -- this allows the source to have spaces between chunks, while not having kludge whitespace in pre-formatted text blocks.
+
+When a tilde character doesn't start the line and the *out* stream is an open (not NULL) stream, the line is written out to the stream.
+
+At the end of the while loop if the /out/ file stream is not null it indicates that the previous pre-formatted block wasn't closed properly.
+This causes a warning message to be printed to /stderr/ and function returns false.
+
+~c/main.c~
+int processFile( const char* baseDir, const char* sourceFile )
+{
+	fprintf( stdout, "Processing: %s\n", sourceFile );
+
+	FILE* in   = fopen( sourceFile, "r" );
+	FILE* out  = NULL;
+
+	char* line;
+	while ( (line = readline( in )) )
+	{
+		if ( '~' == line[0] ) {
+			out = rejig( out, baseDir, line );
+			if ( out ) fprintf( out, "\n", line );
+		}
+		else if ( out )
+		{
+			fprintf( out, "%s", line );
+		}
+	}
+	fclose( in );
+
+	if ( out )
+	{
+		fclose( out );
+		fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
+	}
+	return (out == NULL);
+}
+~
+
+...			Rejig file output
+
+This function determines whether the passed line contains a valid filename by calling "generateSafeFilepath", then creates any required directories, then opens and returns an appropriate file stream.
+
+~c/main.c~
+FILE* rejig( FILE* out, const char* basedir, const char* line )
+{
+	FILE* ret = NULL;
+
+	if ( out ) fclose( out );
+
+	char* safeFilePath = generateSafeFilepath( basedir, line );
+	if ( safeFilePath && createDirectories( parentDirectory( safeFilePath ) ) )
+	{
+		if ( doWeTruncate( line ) )
+		{
+			ret = fopen( safeFilePath, "w" );
+		}
+		else
+		{
+			ret = fopen( safeFilePath, "a" );
+		}
+	}
+	free( safeFilePath );
+
+	return ret;
+}
+~
+
+...			Generation of the safe filepath
+
+The "generateSafeFilepath" procedure attempts to produce a safe file path from combining the base-dir with a file path extracted from the passed line.
+The passed line starts with a tilde character, but may have anything else as well.
+
+First the line is checked to make sure it doesn't include '..', which would allow accessing paths above the base dir.
+Next 'strtok' is used to tokenise the line using the tilde as a delimiter.
+The first token returned is treated as the filename -- first it is checked to make sure it is alpha-numerical chacter (indicating an appropraite filename), then strtok is called again to verify that the token is trailed by another tilde.
+
+If there are any problems NULL is returned.
+
+~c/main.c~
+
+char* generateSafeFilepath( const char* basedir, const char* line )
+{
+	char* full = NULL;
+	{
+		int len = strlen( basedir ) + strlen( line ) + 1;
+		if ( NULL == strstr( line, ".." ) )
+		{
+			char* test  = stringCopy( line );	
+			char* token = strtok( test, "~" );
+
+			if ( '!' == token[0] ) token++;
+
+			if ( token && isalnum( token[0] ) )
+			{
+				full = calloc( len, sizeof( char ) );
+				strcpy( full, basedir );
+				strcat( full, "/" );
+				strcat( full, token );
+
+				if ( NULL == strtok( NULL, "~" ) )
+				{
+					free( full );
+					full = NULL;
+				}
+			}
+			free( test );
+		}
+	}
+	return full;
+}
+~
+
+...			Truncation
+
+The output file should be truncated if the source file name is proceeded by an exclamation mark.
+
+~c/main.c~
+int doWeTruncate( const char* line )
+{
+	int truncate = 0;
+	if ( 2 < strlen( line ) )
+	{
+		truncate = ('!' == line[1]);
+	}
+	return truncate;
+}
+~
+
+..		Error messages
+
+...			Incorrect arguments
+
+If the program is invoked without the appropriate arguments the following usage message is printed to /stderr/.
+~
+Usage:
+	semi [-f] BASE_DIR INPUT_FILES
+~
+
+~c/main.c~
+int usage()
+{
+	const char* ch = "Usage:\n\t semi [-f] BASE_DIR INPUT_FILES";
+	fprintf( stderr, "%s\n", ch );
+	return -1;
+}
+~
+
+...			Directory already exists
+
+If the force ('-f') flag hasn't been passed, and the base directory already exists the following error message is printed to /stderr/.
+~
+	Error: directory already exists, or cannot be created!
+~
+
+~c/main.c~
+int errorDirectoryExists()
+{
+	const char* ch = "Error: directory already exists, or cannot be created!";
+	fprintf( stderr, "%s\n", ch );
+	return -1;
+}
+~

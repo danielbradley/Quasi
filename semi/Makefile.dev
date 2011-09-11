@@ -3,7 +3,9 @@ all: dirs legacy doc src build
 dirs:
 	mkdir -p bin
 	mkdir -p libexec
-	mkdir -p documentation/{html,pdf,tex}
+	mkdir -p documentation/html
+	mkdir -p documentation/pdf
+	mkdir -p documentation/tex
 
 legacy:
 	gcc -o libexec/semi source/legacy/main.c

@@ -1,12 +1,11 @@
 .	Background
 
-This tool was inspired by a previous tool called "extract" that is used for extracting SQL definitions from web system documentation for use in database set up scripts.
-/Extract/ would process text files and would extract the text of the pre-formatted sections that matched the supplied pattern.
+While this tool was inspired by literate programming, it is derived from an earlier tool called "extract" that is used for extracting SQL definitions from web-application requirements documents for using in database initialise scripts.
+The tool would scan text files and extract the text of pre-formatted sections that matched a user supplied pattern.
 
-For example the following block of SQL would be extracted using a command-line similar to:
-
+For example, this command would extract the following block of SQL:
 ~
-	extract -p "users_table" source_file.txt > output_file.sql
+extract -p "users_table" source_file.txt >> output_file.sql
 ~
 
 ~
@@ -19,5 +18,6 @@ For example the following block of SQL would be extracted using a command-line s
 	~
 ~ 
 
-This worked incredibly well as the definitions of the SQL tables and SQL Stored Procedures were able to be directly developed and documented within the requirements document.
-The success of this got me thinking about whether a similar tool could be used to extract source code from documentation.
+This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within the requirements document.
+This provided the motivation for developing a similar tool to also extract source code from documentation.
+
