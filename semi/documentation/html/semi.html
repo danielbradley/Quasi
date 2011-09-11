@@ -8,7 +8,7 @@ BODY {}DIV.document {}DIV.text { width:718px; width:550px; margin-left:auto; mar
 <div class='document'>
 <div class='text'>
 <p class='title1'>	Semi - a tool for semi-literate programming</p>
-<p class='title2'>	Daniel Bradley</p>
+<p class='title2'>	Daniel Bradley @ CrossAdaptive</p>
 <h1>	Copyright</h1>
 <p class='paragraph'>
 Copyright 2011, Daniel Robert Bradley.
@@ -339,31 +339,37 @@ This causes a warning message to be printed to <i>stderr</i> and function return
 <pre>
 int processFile( const char* baseDir, const char* sourceFile )
 {
+	int status = 0;
 	fprintf( stdout, "Processing: %s\n", sourceFile );
 
-	FILE* in   = fopen( sourceFile, "r" );
-	FILE* out  = NULL;
-
-	char* line;
-	while ( (line = readline( in )) )
+	FILE* in = fopen( sourceFile, "r" );
+	if ( in )
 	{
-		if ( '~' == line[0] ) {
-			out = rejig( out, baseDir, line );
-			if ( out ) fprintf( out, "\n", line );
-		}
-		else if ( out )
+		FILE* out = NULL;
+
+		char* line;
+		while ( (line = readline( in )) )
 		{
-			fprintf( out, "%s", line );
+			if ( '~' == line[0] ) {
+				out = rejig( out, baseDir, line );
+				if ( out ) fprintf( out, "\n", line );
+			}
+			else if ( out )
+			{
+				fprintf( out, "%s", line );
+			}
 		}
-	}
-	fclose( in );
+		fclose( in );
 
-	if ( out )
-	{
-		fclose( out );
-		fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
+		if ( out )
+		{
+			fclose( out );
+			fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
+		}
+		status = (out == NULL);
 	}
-	return (out == NULL);
+
+	return status;
 }
 </pre>
 <h3>			Rejig file output</h3>
@@ -419,7 +425,7 @@ char* generateSafeFilepath( const char* basedir, const char* line )
 			char* test  = stringCopy( line );	
 			char* token = strtok( test, "~" );
 
-			if ( '!' == token[0] ) token++;
+			if ( token && ('!' == token[0]) ) token++;
 
 			if ( token && isalnum( token[0] ) )
 			{
