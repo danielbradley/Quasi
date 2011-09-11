@@ -1,7 +1,10 @@
 bin
+documentation
+libexec
 obj
+
+c
+
 ._*
 .DS_Store
 semi-*
-libexec
-c
