@@ -21,14 +21,14 @@ This software is released under the terms of the GPLv3.
 Download from:
 </p>
 <pre>
-http://www.crossadaptive.com/download/Semi/semi-1.0.tar.bz2
+http://www.crossadaptive.com/download/Semi/semi-1.0.2.tar.bz2
 </pre>
 <h1>	Source</h1>
 <p class='paragraph'>
 View source:
 </p>
 <pre>
-http://semiliterateprogramming.org/semi.txt
+http://semiliterateprogramming.org/semi.mtx.txt
 </pre>
 <h1>	Disclaimer</h1>
 <p class='paragraph'>
@@ -168,6 +168,9 @@ It is thought that the key benefit of this approach is that it will enable progr
 Semi has now been reimplemented using an earlier version of semi.
 This version has been rewritten in pure C to maximise portability, allowing it to act as the foundation of an organisation's development tool set.
 </p>
+<pre>
+/*   !!!   Warning generated from mtx source files   !!!   */
+</pre>
 <h2>		Invocation</h2>
 <p class='paragraph'>
 To ensure simplicity of implementation, Semi is invoked with a simple command-line.
@@ -307,7 +310,6 @@ int canAccessDirectory( const char* baseDir, int force )
 For each source file the <b>processFile</b> function is called passing the <i>baseDir</i> and the <i>source file</i>.
 </p>
 <pre>
-
 int processSourceFiles( const char* baseDir, int first, int last, const char** files )
 {
 	int status = 1;
@@ -414,7 +416,6 @@ The first token returned is treated as the filename -- first it is checked to ma
 If there are any problems NULL is returned.
 </p>
 <pre>
-
 char* generateSafeFilepath( const char* basedir, const char* line )
 {
 	char* full = NULL;
@@ -621,7 +622,7 @@ char* stringCopy( const char* aString )
 </p>
 </td>
 <tr>
-<td class='bibkey'><a name='XXX' />[3]</td>
+<td class='bibkey'><a name='Noweb' />[3]</td>
 <td class='reference'><p class='Reference'>
 		Noweb - A Simple, Extensible Tool for Literate Programming http://www.cs.tufts.edu/~nr/noweb/
 </p>

@@ -7,79 +7,205 @@
 #include <dirent.h>
 #include <libgen.h>
 
-int            checkArgs( int argc, char** argv );
-int      createDirectory( int argc, char** argv );
-int                usage();
-int errorDirectoryExists();
+int        processArguments( int argc, const char** argv );
+int  canAccessBaseDirectory( const char* baseDir, int forced );
+int      processSourceFiles( const char* baseDir, int first, int last, const char** files );
+FILE*                 rejig( FILE* out, const char* baseDir, const char* line );
+char*  generateSafeFilepath( const char* basedir, const char* line );
+int            doWeTruncate( const char* line );
 
-int           processFiles( int argc, char** argv );
-int      processSourceFile( const char* basedir, const char* filepath );
-char*             readline( FILE* stream );
-FILE*                rejig( FILE* out, const char* basedir, const char* line );
-char* generateSafeFilepath( const char* basedir, const char* line );
-int      createDirectories(       char* safeFilePath );
-char*               parent( const char* filepath );
+int                   usage();
+int    errorDirectoryExists();
 
-int main( int argc, char** argv )
-{
-	if ( checkArgs( argc, argv ) ) {
-		if ( createDirectory( argc, argv ) ) {
-			return !processFiles( argc, argv );
-		}
-		else {
-			return errorDirectoryExists();
-		}
-	}
-	else {
-		return usage();
-	}
-	return 0;
-}
-int force;
+int       createDirectories(       char* safeFilePath );
+int         directoryExists( const char* path );
+char*       parentDirectory( const char* filepath );
+char*              readline( FILE* stream );
+char*            stringCopy( const char* aString );
 
-int checkArgs( int argc, char** argv )
+int         FORCE;
+int         FIRST;
+const char* BASE_DIR;
+
+int main( int argc, const char** argv )
 {
 	int status = 0;
-	if ( argc >= 3 )
-	{
-		force = (0 == strcmp( argv[1], "-f" ));
 
-		status = force ? (argc >= 4) : (argc >= 3);
+	if ( processArguments( argc, argv ) )
+	{
+		if ( canAccessDirectory( BASE_DIR, FORCE ) )
+		{
+			int last = argc - 1;
+			status = processSourceFiles( BASE_DIR, FIRST, last, argv );
+		}
+		else
+		{
+			status = errorDirectoryExists();
+		}
+	}
+	else
+	{
+		status = usage();
+	}
+	return !status;
+}
+
+int processArguments( int argc, const char** argv )
+{
+	int status             = 0;
+	int expected_arguments = 3;
+	int i                  = 1;
+
+	if ( argc >= expected_arguments )
+	{
+		if ( 0 == strcmp( argv[i], "-f" ) )
+		{
+			expected_arguments++;
+			i++;
+			FORCE = 1;
+		}
+		BASE_DIR = argv[i]; i++;
+		FIRST    = i;
+		status   = ( argc >= expected_arguments );
 	}
 	return status;	
 }
 
-int usage()
+int canAccessDirectory( const char* baseDir, int force )
 {
-	const char* ch = "Usage:\n\t semi [-f] BASEDIR INPUT_FILES";
-	fprintf( stderr, "%s\n", ch );
-	return -1;
-}
+	int status = 0;
 
-int createDirectory( int argc, char** argv )
-{
-	int ret = 1;
-	const char* dirname = NULL;
-
-	if ( !force ) {
-		dirname = argv[1];
-	}
-	else {
-		dirname = argv[2];
-	}
-
-	if ( mkdir( dirname, 0755 ) )
+	if ( mkdir( baseDir, 0755 ) )
 	{
 		switch ( errno )
 		{
 		case EEXIST:
-			ret = force;
+			status = force;
 			break;
 		default:
-			ret = 0;
+			status = 1;
 		}
 	}
+	return status;
+}
+
+
+int processSourceFiles( const char* baseDir, int first, int last, const char** files )
+{
+	int status = 1;
+	int i;
+	for ( i=first; i <= last; i++ )
+	{
+		status &= processFile( baseDir, files[i] );
+	}
+	return status;
+}
+
+int processFile( const char* baseDir, const char* sourceFile )
+{
+	int status = 0;
+	fprintf( stdout, "Processing: %s\n", sourceFile );
+
+	FILE* in = fopen( sourceFile, "r" );
+	if ( in )
+	{
+		FILE* out = NULL;
+
+		char* line;
+		while ( (line = readline( in )) )
+		{
+			if ( '~' == line[0] ) {
+				out = rejig( out, baseDir, line );
+				if ( out ) fprintf( out, "\n", line );
+			}
+			else if ( out )
+			{
+				fprintf( out, "%s", line );
+			}
+		}
+		fclose( in );
+
+		if ( out )
+		{
+			fclose( out );
+			fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
+		}
+		status = (out == NULL);
+	}
+
+	return status;
+}
+
+FILE* rejig( FILE* out, const char* basedir, const char* line )
+{
+	FILE* ret = NULL;
+
+	if ( out ) fclose( out );
+
+	char* safeFilePath = generateSafeFilepath( basedir, line );
+	if ( safeFilePath && createDirectories( parentDirectory( safeFilePath ) ) )
+	{
+		if ( doWeTruncate( line ) )
+		{
+			ret = fopen( safeFilePath, "w" );
+		}
+		else
+		{
+			ret = fopen( safeFilePath, "a" );
+		}
+	}
+	free( safeFilePath );
+
 	return ret;
+}
+
+
+char* generateSafeFilepath( const char* basedir, const char* line )
+{
+	char* full = NULL;
+	{
+		int len = strlen( basedir ) + strlen( line ) + 1;
+		if ( NULL == strstr( line, ".." ) )
+		{
+			char* test  = stringCopy( line );	
+			char* token = strtok( test, "~" );
+
+			if ( token && ('!' == token[0]) ) token++;
+
+			if ( token && isalnum( token[0] ) )
+			{
+				full = calloc( len, sizeof( char ) );
+				strcpy( full, basedir );
+				strcat( full, "/" );
+				strcat( full, token );
+
+				if ( NULL == strtok( NULL, "~" ) )
+				{
+					free( full );
+					full = NULL;
+				}
+			}
+			free( test );
+		}
+	}
+	return full;
+}
+
+int doWeTruncate( const char* line )
+{
+	int truncate = 0;
+	if ( 2 < strlen( line ) )
+	{
+		truncate = ('!' == line[1]);
+	}
+	return truncate;
+}
+
+int usage()
+{
+	const char* ch = "Usage:\n\t semi [-f] BASE_DIR INPUT_FILES";
+	fprintf( stderr, "%s\n", ch );
+	return -1;
 }
 
 int errorDirectoryExists()
@@ -89,44 +215,40 @@ int errorDirectoryExists()
 	return -1;
 }
 
-int processFiles( int argc, char** argv )
+int createDirectories( char* dir )
 {
-	int status = 1;
+	int success = 1;
+	if ( ! directory_exists( dir ) )
 	{
-		int i = force ? 3 : 2;	// semi -f dir first
-		const char* target = force ? argv[2] : argv[1]; 
-
-		for ( i; i < argc; i++ )
+		if ( createDirectories( parentDirectory( dir ) ) )
 		{
-			status &= processSourceFile( target, argv[i] );
+			success = ! mkdir( dir, 0755 );
 		}
+	}
+	free( dir );
+	return success;
+}
+
+int directory_exists( const char* path )
+{
+	int status = 0;
+	DIR* dir = opendir( path );
+	if ( dir )
+	{
+		closedir( dir );
+		status = 1;
 	}
 	return status;
 }
 
-int processSourceFile( const char* target, const char* filepath )
+char* parentDirectory( const char* filepath )
 {
-	fprintf( stdout, "Processing: %s\n", filepath );
-
-	FILE* in   = fopen( filepath, "r" );
-	FILE* out  = NULL;
-
-	char* line;
-	while ( (line = readline( in )) )
+	char* ret = calloc( strlen( filepath ) + 1, sizeof( char ) );
 	{
-		if ( '~' == line[0] ) {
-			out = rejig( out, target, line );
-			if ( out ) fprintf( out, "\n", line );
-		}
-		else if ( out )
-		{
-			fprintf( out, "%s", line );
-		}
+		strcpy( ret, filepath );
+		strcpy( ret, dirname( ret ) );
 	}
-	fclose( in );
-	if ( out ) fclose( out );
-
-	return (out == NULL);
+	return ret;
 }
 
 char* readline( FILE* stream )
@@ -163,87 +285,9 @@ char* readline( FILE* stream )
 	return line;
 }
 
-FILE* rejig( FILE* out, const char* basedir, const char* line )
+char* stringCopy( const char* aString )
 {
-	FILE* ret = NULL;
-
-	if ( out )
-	{
-		fclose( out );
-	}
-	{
-		char* safeFilePath = generateSafeFilepath( basedir, line );
-		if ( safeFilePath && createDirectories( parent( safeFilePath ) ) )
-		{
-			ret = fopen( safeFilePath, "a" );
-		}
-		free( safeFilePath );
-	}
-
-	return ret;
-}
-
-char* generateSafeFilepath( const char* basedir, const char* line )
-{
-	char* full = NULL;
-	{
-		int len = strlen( basedir ) + strlen( line ) + 2;
-		if ( NULL == strstr( line, ".." ) )
-		{
-			char test[len];
-			strcpy( test, line );
-			char* token = strtok( test, "~" );
-			if ( token && isalnum( token[0] ) )
-			{
-				full = calloc( len, sizeof( char ) );
-				strcpy( full, basedir );
-				strcat( full, "/" );
-				strcat( full, token );
-
-				if ( NULL == strtok( NULL, "~" ) )
-				{
-					free( full );
-					full = NULL;
-				}
-			}
-
-		}
-	}
-	return full;
-}
-
-int createDirectories( char* dir )
-{
-	int success = 1;
-	if ( ! directory_exists( dir ) )
-	{
-		if ( createDirectories( parent( dir ) ) )
-		{
-			success = ! mkdir( dir, 0755 );
-		}
-	}
-	free( dir );
-	return success;
-}
-
-int directory_exists( const char* path )
-{
-	int status = 0;
-	DIR* dir = opendir( path );
-	if ( dir )
-	{
-		closedir( dir );
-		status = 1;
-	}
-	return status;
-}
-
-char* parent( const char* filepath )
-{
-	char* ret = calloc( strlen( filepath ) + 1, sizeof( char ) );
-	{
-		strcpy( ret, filepath );
-		strcpy( ret, dirname( ret ) );
-	}
-	return ret;
+	char* copy = calloc( strlen( aString) + 1, sizeof( char ) );
+	strcpy( copy, aString );
+	return copy;
 }

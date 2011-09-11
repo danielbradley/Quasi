@@ -1,25 +1,24 @@
-all: dirs legacy doc src build
+all: libexec doc semi build
 
-dirs:
-	mkdir -p bin
+libexec:
 	mkdir -p libexec
-	mkdir -p documentation/html
-	mkdir -p documentation/pdf
-	mkdir -p documentation/tex
-
-legacy:
 	gcc -o libexec/semi source/legacy/main.c
 
 doc:
-	max2tex  --out documentation/tex/semi  source/mtx/*.mtx
+	mkdir -p documentation/html
+	mkdir -p documentation/mtx
 	max2html --out documentation/html/semi source/mtx/*.mtx
+	cat source/mtx/*.mtx > documentation/mtx/semi.mtx.txt
 
-src:
-	rm -rf source/c
+semi:
 	libexec/semi -f source source/mtx/*.mtx
 
 build:
+	mkdir -p bin
 	gcc -g -o bin/semi source/c/main.c
 
 clean:
 	rm -rf bin documentation libexec source/c
+
+prep:
+	rm -rf bin libexec source/c
