@@ -7,7 +7,7 @@ Tools can then be used to produce reader friendly documentation /woven/ from the
 Knuth's original tool was called "Web" [Web], however other tools have since been developed that are language-agnostic [Noweb].
 
 The following code fragment from the literate programming Wikipedia page demonstrates how the web system worked [Wikipedia].
-The text "<<Scan File>>=" defines a /macro/ that has associated with it the code following.
+The text '<<Scan File>>=' defines a /macro/ that has associated with it the code following.
 
 ~
 	<<Scan file>>=
@@ -30,7 +30,7 @@ The text "<<Scan File>>=" defines a /macro/ that has associated with it the code
 	@
 ~
 
-The macro "<<Scan File>>" could then be used in any other code /chunk/.
+The macro '<<Scan File>>' could then be used in any other code /chunk/.
 
 A problem with such an approach is the possibility that the while a reader think they understand the code they are reading, it may be the case that they are not noticing a specific interaction between various code chucks.
 It would be necessary for the reader to reference the /tangled/ code, in order to be sure they are properly understanding interactions with the system.

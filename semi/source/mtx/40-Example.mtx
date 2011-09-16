@@ -262,6 +262,7 @@ The "generateSafeFilepath" procedure attempts to produce a safe file path from c
 The passed line starts with a tilde character, but may have anything else as well.
 
 First the line is checked to make sure it doesn't include '..', which would allow accessing paths above the base dir.
+Next the line is checked to make sure it does include a '.', either indicating a relative directory path, or the beginning of a file type suffix -- this is to avoid MaxText pre-formatted text tags.
 Next 'strtok' is used to tokenise the line using the tilde as a delimiter.
 The first token returned is treated as the filename -- first it is checked to make sure it is alpha-numerical chacter (indicating an appropraite filename), then strtok is called again to verify that the token is trailed by another tilde.
 
@@ -275,25 +276,28 @@ char* generateSafeFilepath( const char* basedir, const char* line )
 		int len = strlen( basedir ) + strlen( line ) + 1;
 		if ( NULL == strstr( line, ".." ) )
 		{
-			char* test  = stringCopy( line );	
-			char* token = strtok( test, "~" );
-
-			if ( token && ('!' == token[0]) ) token++;
-
-			if ( token && isalnum( token[0] ) )
+			if ( NULL != strstr( line, "." ) )
 			{
-				full = calloc( len, sizeof( char ) );
-				strcpy( full, basedir );
-				strcat( full, "/" );
-				strcat( full, token );
+				char* test  = stringCopy( line );	
+				char* token = strtok( test, "~" );
 
-				if ( NULL == strtok( NULL, "~" ) )
+				if ( token && ('!' == token[0]) ) token++;
+
+				if ( token && isalnum( token[0] ) )
 				{
-					free( full );
-					full = NULL;
+					full = calloc( len, sizeof( char ) );
+					strcpy( full, basedir );
+					strcat( full, "/" );
+					strcat( full, token );
+
+					if ( NULL == strtok( NULL, "~" ) )
+					{
+						free( full );
+						full = NULL;
+					}
 				}
+				free( test );
 			}
-			free( test );
 		}
 	}
 	return full;

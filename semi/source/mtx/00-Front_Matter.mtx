@@ -1,5 +1,23 @@
+~html~
+<!-- Place this tag where you want the +1 button to render -->
+<g:plusone></g:plusone>
+
+<!-- Place this render call where appropriate -->
+<script type="text/javascript">
+  (function() {
+    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  })();
+</script>
+~
+
 -	Semi - a tool for semi-literate programming
---	Daniel Bradley @ CrossAdaptive
+--	Daniel Bradley
+
+~html~
+<p class='subtitle'><a href='http://www.crossadaptive.com'>www.crossadaptive.com</a></p>
+~
 
 ,	Copyright
 
@@ -10,15 +28,16 @@ Copyright 2011, Daniel Robert Bradley.
 This software is released under the terms of the GPLv3.
 
 Download from:
-~
-http://www.crossadaptive.com/download/Semi/semi-1.0.2.tar.bz2
+
+~html~
+<a href='http://www.semiliterateprogramming.org/download/semi-1.0.2.tar.bz2'>http://www.semiliterateprogramming.org/download/Semi/semi-1.0.2.tar.bz2</a>
 ~
 
 ,	Source
 
 View source:
-~
-http://semiliterateprogramming.org/semi.mtx.txt
+~html~
+<a href='http://www.semiliterateprogramming.org/semi.mtx.txt'>http://www.semiliterateprogramming.org/semi.mtx.txt</a>
 ~
 
 ,	Disclaimer

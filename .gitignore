@@ -1,5 +1,5 @@
 bin
-documentation
+documentation/*
 libexec
 obj
 
