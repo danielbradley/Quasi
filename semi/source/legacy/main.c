@@ -1,4 +1,6 @@
 
+/*   !!!   Warning generated from mtx source files   !!!   */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -75,20 +77,21 @@ int canAccessDirectory( const char* baseDir, int force )
 {
 	int status = 0;
 
-	if ( mkdir( baseDir, 0755 ) )
+	if ( 0 == mkdir( baseDir, 0755 ) )
+	{
+		status = 1;
+	}
+	else
 	{
 		switch ( errno )
 		{
 		case EEXIST:
 			status = force;
 			break;
-		default:
-			status = 1;
 		}
 	}
 	return status;
 }
-
 
 int processSourceFiles( const char* baseDir, int first, int last, const char** files )
 {
@@ -115,8 +118,8 @@ int processFile( const char* baseDir, const char* sourceFile )
 		while ( (line = readline( in )) )
 		{
 			if ( '~' == line[0] ) {
-				out = rejig( out, baseDir, line );
 				if ( out ) fprintf( out, "\n", line );
+				out = rejig( out, baseDir, line );
 			}
 			else if ( out )
 			{
@@ -159,13 +162,14 @@ FILE* rejig( FILE* out, const char* basedir, const char* line )
 	return ret;
 }
 
-
 char* generateSafeFilepath( const char* basedir, const char* line )
 {
 	char* full = NULL;
+
+	int len = strlen( basedir ) + strlen( line ) + 1;
+	if ( NULL == strstr( line, ".." ) )
 	{
-		int len = strlen( basedir ) + strlen( line ) + 1;
-		if ( NULL == strstr( line, ".." ) )
+		if ( NULL != strstr( line, "." ) )
 		{
 			char* test  = stringCopy( line );	
 			char* token = strtok( test, "~" );
@@ -205,14 +209,14 @@ int usage()
 {
 	const char* ch = "Usage:\n\t semi [-f] BASE_DIR INPUT_FILES";
 	fprintf( stderr, "%s\n", ch );
-	return -1;
+	return 0;
 }
 
 int errorDirectoryExists()
 {
 	const char* ch = "Error: directory already exists, or cannot be created!";
 	fprintf( stderr, "%s\n", ch );
-	return -1;
+	return 0;
 }
 
 int createDirectories( char* dir )
@@ -243,11 +247,8 @@ int directory_exists( const char* path )
 
 char* parentDirectory( const char* filepath )
 {
-	char* ret = calloc( strlen( filepath ) + 1, sizeof( char ) );
-	{
-		strcpy( ret, filepath );
-		strcpy( ret, dirname( ret ) );
-	}
+	char*  ret = stringCopy( filepath );
+	strcpy( ret, dirname( ret ) );
 	return ret;
 }
 

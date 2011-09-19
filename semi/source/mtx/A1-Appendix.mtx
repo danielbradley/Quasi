@@ -43,15 +43,16 @@ int directory_exists( const char* path )
 ..	Parent directory
 
 A simple wrapper around "dirname" that allocates and returns a string.
+Note: due to /dirname/ returning its own storage, can't just call:
+~
+	return stringcopy( dirname( filepath ) );
+~
 
 ~c/main.c~
 char* parentDirectory( const char* filepath )
 {
-	char* ret = calloc( strlen( filepath ) + 1, sizeof( char ) );
-	{
-		strcpy( ret, filepath );
-		strcpy( ret, dirname( ret ) );
-	}
+	char*  ret = stringCopy( filepath );
+	strcpy( ret, dirname( ret ) );
 	return ret;
 }
 ~
@@ -62,6 +63,8 @@ The "readline" procedure reads individual characters into a character buffer --
 each character is appended to the char string "line".
 When a newline character is encountered "line" is returned.
 When the stream is empty a NULL is returned.
+
+Easier to implement this, rather than worry about portability.
 
 ~c/main.c~
 char* readline( FILE* stream )

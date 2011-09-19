@@ -1,7 +1,7 @@
 .	Concept
 
 Similar to "extract", "semi" extracts sections of pre-formatted text from documentation and appends it to /target/ text files.
-Unlike "extract" rather than matching a supplied pattern, the /identifier/ in the pre-formatted text section is used as the file path of the target file relative to a user supplied base directory.
+Unlike "extract", rather than matching a supplied pattern, the /identifier/ in the pre-formatted text section is used as the file path of the target file relative to a user supplied base directory.
 
 For example, this command would extract the following block of source code and append it to the file 'source/c/semi.c':
 ~
@@ -32,7 +32,7 @@ It is advisable that when a file is truncated in this manner that the code fragm
 ~
 
 Semi is implemented to process text files that use the MaxText text format [MaxText].
-If certain code fragments are not desired in the output documentation they can be commented using the standard MaxText commenting character, but will still be processed properly by Semi.
+If code fragments are not appropriate for the output documentation they can be commented using the standard MaxText commenting character, causing them to be ignored by MaxText, but still be processed by Semi.
 This is useful for hiding code comments, or perhaps includes.
 ~
 	!
@@ -46,7 +46,5 @@ This is useful for hiding code comments, or perhaps includes.
 	!
 ~
 
-The key difference between literate programming tools and Semi is that Semi forces the programmer to construct all target source files in a linear fashion.
-However, as files may be constructed in parallel.
-It is thought that the key benefit of this approach is that it will enable programmers to better modularise their software as their is very little overhead in creating new files.
-
+The key difference between literate programming tools and Semi is that Semi forces the programmer to construct all target source files in a linear fashion, however, separate files may still be constructed in parallel.
+It is thought that an additional benefit of this approach is that it will enable programmers to better modularise their software, as there is very little overhead in creating new files.
