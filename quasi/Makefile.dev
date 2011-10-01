@@ -1,0 +1,24 @@
+all: libexec doc semi build
+
+libexec:
+	mkdir -p libexec
+	gcc -o libexec/quasi source/legacy/main.c
+
+doc:
+	mkdir -p documentation/html
+	mkdir -p documentation/mtx
+	max2html --out documentation/html/quasi source/mtx/*.mtx
+	cat source/mtx/*.mtx > documentation/mtx/quasi.mtx.txt
+
+semi:
+	libexec/quasi -f source source/mtx/*.mtx
+
+build:
+	mkdir -p bin
+	gcc -g -o bin/quasi source/c/main.c
+
+clean:
+	rm -rf bin documentation libexec source/c
+
+prep:
+	rm -rf bin libexec source/c

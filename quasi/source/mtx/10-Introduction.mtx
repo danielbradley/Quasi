@@ -1,0 +1,42 @@
+.	Introduction
+
+Donald Knuth coined the term "literate programming" to refer to a programming approach whereby a programmer develops a program "in the order demanded by logic and flow of their thoughts" [Wikipedia].
+Rather than produce source code that is /commented/ with textual descriptions, a textual description is produced that describes the structure and semantics of code /chunks/ embedded within the prose.
+
+Tools can then be used to produce reader friendly documentation /woven/ from the source, as well as an executable/compilable /tangled/ form.
+Knuth's original tool was called "Web" [Web], however other tools have since been developed that are language-agnostic [Noweb].
+
+The following code fragment from the /literate programming/ Wikipedia page demonstrates how the "web" system works [Wikipedia].
+The text '<<Scan File>>=' defines a /macro/ that is associated with the code that follows it.
+
+~
+	<<Scan file>>=
+	while (1) {
+		<<Fill buffer if it is empty; break at end of file>>
+		c = *ptr++;
+		if ( c > ' ' && c < 0177 ) {
+			/* visible ASCII codes */
+			if ( !in_word) {
+				word_count++;
+				in_word = 1;
+			}
+			continue;
+		}
+		if ( c == '\n' ) line_count++;
+		else if ( c != ' ' && c != '\t') continue;
+		in_word = 0;
+			/* c is newline, space, or tab */
+	}
+	@
+~
+
+The macro '<<Scan File>>' could then be used in any other code /chunk/.
+
+A problem with such an approach is the possibility that while a reader may think they fully understand the code they are reading, it is possible that they do not notice a specific interaction between various code chucks.
+It would be necessary for the reader to reference the /tangled/ code in order to be sure they are properly understanding interactions within the system.
+
+A related problem is that there are no limitation on how macros are used, allowing code to be intermixed in arbitrary ways.
+Software developed using the system may become increasingly hard to maintain as others are forced edit the source files.
+
+This document describes Quasi, a tool for quasi-literate programming.
+It has been developed in the spirit of Knuth's literate programming but, by providing a far less powerful tool, it also simplifies the process from the perspective of a maintenance programmer.
