@@ -1,3 +1,23 @@
+!
+Copyright 2011, Daniel Robert Bradley
+This software is released under the terms of the GPLv3 
+
+This file is part of Quasi.
+
+Quasi is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Quasi is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+!
+
 ,	Appendix A
 
 Quasi uses the following generic auxiliary functions.
@@ -64,14 +84,18 @@ each character is appended to the char string "line".
 When a newline character is encountered "line" is returned.
 When the stream is empty a NULL is returned.
 
-Easier to implement this, rather than worry about portability.
+If the line is longer than 1023 characters the buffer "line" is doubled in size using "realloc".
+
+Easier to implement this, than worry about portability.
+From memory, the POSIX function is implemented differently on different systems.
 
 ~c/main.c~
 char* readline( FILE* stream )
 {
-	int  n = 0;
+	int  n     = 0;
+	int  sz    = 1024;
 	char ch[2] = { 0, 0 };
-	char* line = calloc( 1024, sizeof( char ) );
+	char* line = calloc( sz, sizeof( char ) );
 
 	int read;
 	do
@@ -88,7 +112,14 @@ char* readline( FILE* stream )
 			default:
 				line[n++] = *ch;
 			}
+
+			if ( n == sz )
+			{
+				sz  *= 2;
+				line = realloc( line, sz );
+			}
 		}
+		
 	}
 	while ( 0 != read );
 

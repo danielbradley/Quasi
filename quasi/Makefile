@@ -1,11 +1,11 @@
-all: libexec semi doc build
+all: libexec quasi doc build
 
 libexec:
 	mkdir -p libexec
 	gcc -o libexec/quasi source/legacy/main.c
 
-semi:
-	libexec/semi -f source source/mtx/*.mtx
+quasi:
+	libexec/quasi -f source source/mtx/*.mtx
 
 doc:
 	mkdir -p documentation/mtx
@@ -16,4 +16,4 @@ build:
 	gcc -o bin/quasi source/c/main.c
 
 clean:
-	rm -rf bin libexec source/c
+	rm -rf bin libexec source/c web
