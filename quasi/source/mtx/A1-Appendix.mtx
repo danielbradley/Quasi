@@ -107,10 +107,12 @@ char* readline( FILE* stream )
 			{
 			case '\n':
 				line[n++] = *ch;
-				read = 0;
+				line[n]   = '\0';
+				read      = 0;
 				break;
 			default:
 				line[n++] = *ch;
+				line[n]   = '\0';
 			}
 
 			if ( n == sz )
