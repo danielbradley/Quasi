@@ -1,14 +1,10 @@
 bin
-documentation
 libexec
 obj
-web
-
 c
 
 ._*
 .DS_Store
-quasi-*
 *.tar.bz2
 *.zip
 *.gz
