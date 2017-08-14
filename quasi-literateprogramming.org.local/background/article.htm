@@ -1,0 +1,26 @@
+<article>
+<h1>Background</h1>
+<p class='paragraph'>
+While this tool was inspired by literate programming, it is derived from an earlier tool called "extract" that is used for extracting SQL definitions from web-application requirements documents for use in database initialisation scripts.
+The tool would scan text files and extract the text of pre-formatted sections that matched a user supplied pattern.
+</p>
+<p class='paragraph'>
+For example, this command would extract the following block of SQL:
+</p>
+<pre>
+extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
+</pre>
+<pre>
+	~users_table~
+	CREATE TABLE users
+	(
+	USER        INT(11)  NOT NULL AUTO_INCREMENT
+	PRIMARY KEY (USER)
+	);
+	~
+</pre>
+<p class='paragraph'>
+This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within a requirements document.
+This provided the motivation for developing a similar tool to also extract source code from documentation.
+</p>
+</article>

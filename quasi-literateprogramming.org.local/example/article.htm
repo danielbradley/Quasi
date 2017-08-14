@@ -1,0 +1,342 @@
+<article>
+<h1>Example: quasi implementation</h1>
+<p class='paragraph'>
+Quasi has now been reimplemented in pure C to maximise portability, allowing it to act as the foundation of an organisation's development tool set.
+</p>
+<pre>
+/*   !!!   Warning generated from mtx source files   !!!   */
+</pre>
+<h2>Invocation</h2>
+<p class='paragraph'>
+To ensure simplicity of implementation, Quasi is invoked with a simple command-line.
+</p>
+<pre>
+	quasi [-f] BASE_DIR INPUT_FILES...
+</pre>
+<p class='paragraph'>
+The <i>BASE DIR</i> argument specifies the directory that target files are created relative to -- if the <i>BASE DIR</i> already exists, Quasi exits returning an error, unless the '-f' flag is passed as the first argument.
+After the <i>BASE DIR</i>, one or more input files are specified for parsing.
+</p>
+<h2>Overview</h2>
+<p class='paragraph'>
+The function declarations below show the overall structure of Quasi.
+First the arguments are processed (processArguments) and, if valid, the base directory is verified (canAccessBaseDirectory) and created, if needed.
+Each of the command-line arguments corresponding to the source files are then processed (processSourceFile).
+During processing, the output files are opened and closed (rejig) as necessary.
+Each time a target file is created the filename must be appropriately sanitised (generateSafeFilepath) and it must be determined whether to truncate the file or not (doWeTruncate).
+</p>
+<pre>
+int        processArguments( int argc, const char** argv );
+int      canAccessDirectory( const char* baseDir, int forced );
+int      processSourceFiles( const char* baseDir, int first, int last, const char** files );
+int             processFile( const char* baseDir, const char* sourceFile );
+
+FILE*                 rejig( FILE* out, const char* baseDir, const char* line );
+char*  generateSafeFilepath( const char* basedir, const char* line );
+int            doWeTruncate( const char* line );
+</pre>
+<p class='paragraph'>
+If inappropriate arguments are passed, Quasi prints a usage message (usage) and exits with an error.
+Similarly, if the <i>base dir</i> directory already exists, Quasi prints an error message (*errorDirectoryExists*) and exists with an error.
+</p>
+<pre>
+int                   usage();
+int    errorDirectoryExists();
+</pre>
+<p class='paragraph'>
+The following utility functions are also used (these are described in the appendix).
+</p>
+<pre>
+int       createDirectories(       char* safeFilePath );
+int        directory_exists( const char* path );
+char*       parentDirectory( const char* filepath );
+char*              readline( FILE* stream );
+char*            stringCopy( const char* aString );
+</pre>
+<p class='paragraph'>
+During argument processing, the following global variables are initialised.
+<i>FORCE</i> is initialised as true (1) if the '-f' flag was passed; FIRST is initialised to indicate the first source file argument in <i>argv</i>; and <i>BASE_DIR</i> is initialised to the base directory argument.
+</p>
+<pre>
+int         FORCE;
+int         FIRST;
+const char* BASE_DIR;
+</pre>
+<p class='paragraph'>
+The main function calls the appropriate functions as needed.
+</p>
+<pre>
+int main( int argc, const char** argv )
+{
+	int status = 0;
+
+	if ( processArguments( argc, argv ) )
+	{
+		if ( canAccessDirectory( BASE_DIR, FORCE ) )
+		{
+			int last = argc - 1;
+			status = processSourceFiles( BASE_DIR, FIRST, last, argv );
+		}
+		else
+		{
+			status = errorDirectoryExists();
+		}
+	}
+	else
+	{
+		status = usage();
+	}
+	return !status;
+}
+</pre>
+<h2>Argument processing</h2>
+<p class='paragraph'>
+If the minimum expected number of arguments is supplied, the arguments are processed.
+If the force argument is supplied, the global variable <i>FORCE</i> is set to true (1);
+then the global variable <i>BASE_DIR</i> is initialised to the next argument.
+Finally, if there is at least one file argument remaining, the global variable <i>FIRST</i> is initialised to identify it and the function returns true (1).
+</p>
+<pre>
+int processArguments( int argc, const char** argv )
+{
+	int status             = 0;
+	int expected_arguments = 3;
+	int i                  = 1;
+
+	if ( argc &gt;= expected_arguments )
+	{
+		if ( 0 == strcmp( argv[i], "-f" ) )
+		{
+			expected_arguments++;
+			i++;
+			FORCE = 1;
+		}
+		BASE_DIR = argv[i]; i++;
+		FIRST    = i;
+		status   = ( argc &gt;= expected_arguments );
+	}
+	return status;	
+}
+</pre>
+<h2>Accessing the base directory</h2>
+<p class='paragraph'>
+First, an attempt is made to create the base directory.
+True (1) is returned if this succeeds, or if the directory already existed and <i>FORCE</i> is true.
+Otherwise, the method returns false (0).
+</p>
+<pre>
+int canAccessDirectory( const char* baseDir, int force )
+{
+	int status = 0;
+
+	if ( 0 == mkdir( baseDir, 0755 ) )
+	{
+		status = 1;
+	}
+	else
+	{
+		switch ( errno )
+		{
+		case EEXIST:
+			status = force;
+			break;
+		}
+	}
+	return status;
+}
+</pre>
+<h2>Processing the source files</h2>
+<p class='paragraph'>
+For each source file, the <b>processFile</b> function is called passing the <i>baseDir</i> and the <i>source file</i>.
+</p>
+<pre>
+int processSourceFiles( const char* baseDir, int first, int last, const char** files )
+{
+	int status = 1;
+	int i;
+	for ( i=first; i &lt;= last; i++ )
+	{
+		status &= processFile( baseDir, files[i] );
+	}
+	return status;
+}
+</pre>
+<h3>Processing a file</h3>
+<p class='paragraph'>
+This procedure processes an individual source file.
+The file stream <b>in</b> is opened for the duration of the procedure, while the <b>out</b> file stream is only opened during the processing of a pre-formatted text block.
+</p>
+<p class='paragraph'>
+The procedure reads lines from the <b>in</b> stream using the "readline" procedure.
+When a tilde (~) character is encountered, the system either opens, or closes, <b>out</b> by calling the "rejig" function, which rejigs the <b>out</b> stream.
+Each time a stream is closed a blank line is printed to the stream -- this allows the source to have spaces between chunks, while not having kludge whitespace in pre-formatted text blocks.
+</p>
+<p class='paragraph'>
+When a tilde character doesn't start the line and the <b>out</b> stream is an open (not NULL) stream, the line is written out to the stream.
+</p>
+<p class='paragraph'>
+If the <i>out</i> file stream is not null when the loop exists it indicates that the previous pre-formatted block wasn't closed properly.
+This causes a warning message to be printed to <i>stderr</i> and the function returns false (0).
+</p>
+<pre>
+int processFile( const char* baseDir, const char* sourceFile )
+{
+	int status = 0;
+	fprintf( stdout, "Processing: %s\n", sourceFile );
+
+	FILE* in = fopen( sourceFile, "r" );
+	if ( in )
+	{
+		FILE* out = NULL;
+
+		char* line;
+		while ( (line = readline( in )) )
+		{
+			if ( '~' == line[0] ) {
+				if ( out ) fprintf( out, "%s\n", line );
+				out = rejig( out, baseDir, line );
+			}
+			else if ( out )
+			{
+				fprintf( out, "%s", line );
+			}
+		}
+		fclose( in );
+
+		if ( out )
+		{
+			fclose( out );
+			fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
+		}
+		status = (out == NULL);
+	}
+
+	return status;
+}
+</pre>
+<h3>Rejig file output</h3>
+<p class='paragraph'>
+This function closes <i>out</i>, then if the passed line contains a valid file name, opens and returns a new file stream.
+First, if "generateSafeFilepath" indicates a valid file name, any necessary directories are created, then the file is either opened or created.
+If "doWeTruncate" returns true, the file is truncated on open.
+</p>
+<pre>
+FILE* rejig( FILE* out, const char* basedir, const char* line )
+{
+	FILE* ret = NULL;
+
+	if ( out ) fclose( out );
+
+	char* safeFilePath = generateSafeFilepath( basedir, line );
+	if ( safeFilePath && createDirectories( parentDirectory( safeFilePath ) ) )
+	{
+		if ( doWeTruncate( line ) )
+		{
+			ret = fopen( safeFilePath, "w" );
+		}
+		else
+		{
+			ret = fopen( safeFilePath, "a" );
+		}
+	}
+	free( safeFilePath );
+
+	return ret;
+}
+</pre>
+<h3>Generation of the safe filepath</h3>
+<p class='paragraph'>
+The "generateSafeFilepath" procedure attempts to produce a safe file path by combining the passed base-dir with a file path extracted from the passed line.
+The passed line starts with a tilde character but may have anything else as well.
+</p>
+<p class='paragraph'>
+First, the line is checked to make sure it doesn't include '..', which could potentially reference a directory above the <i>base dir</i>.
+Next, the line is checked to ensure it includes a period, '.', either indicating a relative directory path, or the beginning of a file type suffix -- this is to avoid MaxText pre-formatted text tags.
+Then, 'strtok' is used to tokenise the line using the tilde as a delimiter.
+The first token returned is treated as the filepath -- first it is checked to make sure it is alpha-numerical chacter (indicating an appropraite filename), then strtok is called again to verify that the token is trailed by another tilde.
+</p>
+<p class='paragraph'>
+If there are any problems NULL is returned.
+</p>
+<pre>
+char* generateSafeFilepath( const char* basedir, const char* line )
+{
+	char* full = NULL;
+
+	int len = strlen( basedir ) + strlen( line ) + 1;
+	if ( NULL == strstr( line, ".." ) )
+	{
+		if ( NULL != strstr( line, "." ) )
+		{
+			char* test  = stringCopy( line );	
+			char* token = strtok( test, "~" );
+
+			if ( token && ('!' == token[0]) ) token++;
+
+			if ( token && isalnum( token[0] ) )
+			{
+				full = calloc( len, sizeof( char ) );
+				strcpy( full, basedir );
+				strcat( full, "/" );
+				strcat( full, token );
+
+				if ( NULL == strtok( NULL, "~" ) )
+				{
+					free( full );
+					full = NULL;
+				}
+			}
+			free( test );
+		}
+	}
+	return full;
+}
+</pre>
+<h3>Truncation</h3>
+<p class='paragraph'>
+The output file is truncated on open if the source file name is proceeded by an exclamation mark.
+</p>
+<pre>
+int doWeTruncate( const char* line )
+{
+	int truncate = 0;
+	if ( 2 &lt; strlen( line ) )
+	{
+		truncate = ('!' == line[1]);
+	}
+	return truncate;
+}
+</pre>
+<h2>Error messages</h2>
+<h3>Incorrect arguments</h3>
+<p class='paragraph'>
+If the program is invoked without the appropriate arguments the following usage message is printed to <i>stderr</i>.
+</p>
+<pre>
+Usage:
+	quasi [-f] BASE_DIR INPUT_FILES
+</pre>
+<pre>
+int usage()
+{
+	const char* ch = "Usage:\n\t quasi [-f] BASE_DIR INPUT_FILES";
+	fprintf( stderr, "%s\n", ch );
+	return 0;
+}
+</pre>
+<h3>Directory already exists</h3>
+<p class='paragraph'>
+If the force ('-f') flag hasn't been passed, and the base directory already exists, the following error message is printed to <i>stderr</i>.
+</p>
+<pre>
+	Error: directory already exists, or cannot be created!
+</pre>
+<pre>
+int errorDirectoryExists()
+{
+	const char* ch = "Error: directory already exists, or cannot be created!";
+	fprintf( stderr, "%s\n", ch );
+	return 0;
+}
+</pre>
+</article>

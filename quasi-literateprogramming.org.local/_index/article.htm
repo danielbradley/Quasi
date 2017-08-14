@@ -1,0 +1,144 @@
+<article>
+<h1>Introduction</h1>
+<p class='paragraph'>
+Donald Knuth coined the term "literate programming" to refer to a programming approach whereby a programmer develops a program "in the order demanded by logic and flow of their thoughts" [<a href='#Wikipedia' title='Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming'>1</a>].
+Rather than produce source code that is <i>commented</i> with textual descriptions, a textual description is produced that describes the structure and semantics of code <i>chunks</i> embedded within the prose.
+</p>
+<p class='paragraph'>
+Tools can then be used to produce reader friendly documentation <i>woven</i> from the source, as well as an executable/compilable <i>tangled</i> form.
+Knuth's original tool was called "Web" [<a href='#Web' title='The CWEB System of Structured Documentation http://www-cs-faculty.stanford.edu/~uno/cweb.html'>2</a>], however other tools have since been developed that are language-agnostic [<a href='#Noweb' title='Noweb - A Simple, Extensible Tool for Literate Programming http://www.cs.tufts.edu/~nr/noweb/'>3</a>].
+</p>
+<p class='paragraph'>
+The following code fragment from the <i>literate programming</i> Wikipedia page demonstrates how the "web" system works [<a href='#Wikipedia' title='Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming'>1</a>].
+The text '<<Scan File>>=' defines a <i>macro</i> that is associated with the code that follows it.
+</p>
+<pre>
+	&lt;&lt;Scan file&gt;&gt;=
+	while (1) {
+		&lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
+		c = *ptr++;
+		if ( c &gt; ' ' && c &lt; 0177 ) {
+			/* visible ASCII codes */
+			if ( !in_word) {
+				word_count++;
+				in_word = 1;
+			}
+			continue;
+		}
+		if ( c == '\n' ) line_count++;
+		else if ( c != ' ' && c != '\t') continue;
+		in_word = 0;
+			/* c is newline, space, or tab */
+	}
+	@
+</pre>
+<p class='paragraph'>
+The macro '<<Scan File>>' could then be used in any other code <i>chunk</i>.
+</p>
+<p class='paragraph'>
+A problem with such an approach is the possibility that while a reader may think they fully understand the code they are reading, it is possible that they do not notice a specific interaction between various code chucks.
+It would be necessary for the reader to reference the <i>tangled</i> code in order to be sure they are properly understanding interactions within the system.
+</p>
+<p class='paragraph'>
+A related problem is that there are no limitation on how macros are used, allowing code to be intermixed in arbitrary ways.
+Software developed using the system may become increasingly hard to maintain as others are forced edit the source files.
+</p>
+<p class='paragraph'>
+This document describes Quasi, a tool for quasi-literate programming.
+It has been developed in the spirit of Knuth's literate programming but, by providing a far less powerful tool, it also simplifies the process from the perspective of a maintenance programmer.
+</p>
+<h1>Background</h1>
+<p class='paragraph'>
+While this tool was inspired by literate programming, it is derived from an earlier tool called "extract" that is used for extracting SQL definitions from web-application requirements documents for use in database initialisation scripts.
+The tool would scan text files and extract the text of pre-formatted sections that matched a user supplied pattern.
+</p>
+<p class='paragraph'>
+For example, this command would extract the following block of SQL:
+</p>
+<pre>
+extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
+</pre>
+<pre>
+	~users_table~
+	CREATE TABLE users
+	(
+	USER        INT(11)  NOT NULL AUTO_INCREMENT
+	PRIMARY KEY (USER)
+	);
+	~
+</pre>
+<p class='paragraph'>
+This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within a requirements document.
+This provided the motivation for developing a similar tool to also extract source code from documentation.
+</p>
+<h1>Concept</h1>
+<p class='paragraph'>
+Similar to "extract", "quasi" extracts sections of pre-formatted text from documentation and appends it to <i>target</i> text files.
+Unlike "extract", rather than matching a supplied pattern, the <i>identifier</i> in the pre-formatted text section is used as the file path of the target file relative to a user supplied base directory.
+</p>
+<p class='paragraph'>
+For example, this command would extract the following block of source code and append it to the file 'source/c/quasi.c':
+</p>
+<pre>
+	quasi source source/mtx/quasi.mtx
+</pre>
+<pre>
+	~c/quasi.c~
+	int main( int argc, char** argv )
+	{
+		return 0;
+	}
+	~
+</pre>
+<p class='paragraph'>
+The tool does sanitation of the filenames, ensuring that parent directory ('..') commands aren't included and therefore that output files remain under the specified base directory.
+If the specified base directory already exists the tool will exit with an error, unless the '-f' flag is passed as the first command argument.
+</p>
+<pre>
+	quasi -f source source/mtx/quasi.mtx
+</pre>
+<p class='paragraph'>
+If the identifier of the pre-formatted block section is prefixed by an exclamation mark the file is truncated on opening.
+It is advisable that when a file is truncated in this manner that the code fragment be a comment warning that the file is generated:
+</p>
+<pre>
+	~!c/quasi.c~
+	/*   !!!   Warning this file is auto-generated   !!!   */
+	~
+</pre>
+<p class='paragraph'>
+Quasi is implemented to process text files that use the MaxText text format [<a href='#MaxText' title='MaxText will be released publicly soon.'>4</a>].
+If code fragments are not appropriate for the output documentation they can be commented using the standard MaxText commenting character, causing them to be ignored by MaxText, but still be processed by Quasi.
+This is useful for hiding code comments, or perhaps includes.
+</p>
+<pre>
+	!
+	Include various standard includes.
+
+	~!c/quasi.c!~
+	#include &lt;stdio.h&gt;
+	#include &lt;stdlib.h&gt;
+	#include &lt;string.h&gt;
+	~
+	!
+</pre>
+<p class='paragraph'>
+The key difference between literate programming tools and Quasi is that Quasi forces the programmer to construct all target source files in a linear fashion, however, separate files may still be constructed in parallel.
+It is thought that an additional benefit of this approach is that it will enable programmers to better modularise their software, as there is very little overhead in creating new files.
+</p>
+<h1>Bibliography</h1>
+<table class='references'>
+<tr>
+<td class='bibkey'><a name='Wikipedia'>[1]</a></td>
+<td class='reference'>	Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming</td>
+<tr>
+<td class='bibkey'><a name='Web'>[2]</a></td>
+<td class='reference'>		The CWEB System of Structured Documentation http://www-cs-faculty.stanford.edu/~uno/cweb.html</td>
+<tr>
+<td class='bibkey'><a name='Noweb'>[3]</a></td>
+<td class='reference'>		Noweb - A Simple, Extensible Tool for Literate Programming http://www.cs.tufts.edu/~nr/noweb/</td>
+<tr>
+<td class='bibkey'><a name='MaxText'>[4]</a></td>
+<td class='reference'>	MaxText will be released publicly soon.</td>
+</table>
+</article>
