@@ -1,4 +1,4 @@
-all: libexec quasi content
+all: libexec quasi content download
 
 # build
 
@@ -13,6 +13,10 @@ content:
 	generate_content.sh _index         article _resources/source/mt/{10*,20*,30*,X0*}
 	generate_content.sh implementation article _resources/source/mt/{40*,A1*}
 	generate_content.sh download       article _resources/source/mt/50*
+
+download:
+	mkdir -p _resources/downloads/2.0
+	cp _resources/source/c/main.c _resources/downloads/2.0/quasi.c
 
 build:
 	mkdir -p _resources/bin
