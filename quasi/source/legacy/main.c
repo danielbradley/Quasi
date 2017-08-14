@@ -1,17 +1,18 @@
-
 /*   !!!   Warning generated from mtx source files   !!!   */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #include <errno.h>
 #include <dirent.h>
 #include <libgen.h>
 
 int        processArguments( int argc, const char** argv );
-int  canAccessBaseDirectory( const char* baseDir, int forced );
+int      canAccessDirectory( const char* baseDir, int force );
 int      processSourceFiles( const char* baseDir, int first, int last, const char** files );
+int             processFile( const char* baseDir, const char* sourceFile );
 FILE*                 rejig( FILE* out, const char* baseDir, const char* line );
 char*  generateSafeFilepath( const char* basedir, const char* line );
 int            doWeTruncate( const char* line );
@@ -20,10 +21,11 @@ int                   usage();
 int    errorDirectoryExists();
 
 int       createDirectories(       char* safeFilePath );
-int         directoryExists( const char* path );
+int        directory_exists( const char* path );
 char*       parentDirectory( const char* filepath );
 char*              readline( FILE* stream );
 char*            stringCopy( const char* aString );
+int          isAlphanumeric( char ch );
 
 int         FORCE;
 int         FIRST;
@@ -118,7 +120,7 @@ int processFile( const char* baseDir, const char* sourceFile )
 		while ( (line = readline( in )) )
 		{
 			if ( '~' == line[0] ) {
-				if ( out ) fprintf( out, "\n", line );
+				if ( out ) fprintf( out, "\n" );
 				out = rejig( out, baseDir, line );
 			}
 			else if ( out )
@@ -207,7 +209,7 @@ int doWeTruncate( const char* line )
 
 int usage()
 {
-	const char* ch = "Usage:\n\t semi [-f] BASE_DIR INPUT_FILES";
+	const char* ch = "Usage:\n\t quasi [-f] BASE_DIR INPUT_FILES";
 	fprintf( stderr, "%s\n", ch );
 	return 0;
 }
@@ -254,9 +256,10 @@ char* parentDirectory( const char* filepath )
 
 char* readline( FILE* stream )
 {
-	int  n = 0;
+	int  n     = 0;
+	int  sz    = 1024;
 	char ch[2] = { 0, 0 };
-	char* line = calloc( 1024, sizeof( char ) );
+	char* line = calloc( sz, sizeof( char ) );
 
 	int read;
 	do
@@ -268,12 +271,21 @@ char* readline( FILE* stream )
 			{
 			case '\n':
 				line[n++] = *ch;
-				read = 0;
+				line[n]   = '\0';
+				read      = 0;
 				break;
 			default:
 				line[n++] = *ch;
+				line[n]   = '\0';
+			}
+
+			if ( n == sz )
+			{
+				sz  *= 2;
+				line = realloc( line, sz );
 			}
 		}
+		
 	}
 	while ( 0 != read );
 
@@ -292,3 +304,16 @@ char* stringCopy( const char* aString )
 	strcpy( copy, aString );
 	return copy;
 }
+
+int isAlphaNumeric( char ch )
+{
+	switch ( ch )
+	{
+	case '_':
+		return 1;
+
+	default:
+		return isalnum( (unsigned char) ch );
+	}
+}
+

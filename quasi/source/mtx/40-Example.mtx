@@ -84,6 +84,7 @@ int        directory_exists( const char* path );
 char*       parentDirectory( const char* filepath );
 char*              readline( FILE* stream );
 char*            stringCopy( const char* aString );
+int          isAlphanumeric( char ch );
 ~
 
 During argument processing, the following global variables are initialised.

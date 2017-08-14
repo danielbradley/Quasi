@@ -148,3 +148,18 @@ char* stringCopy( const char* aString )
 }
 ~
 
+..		Is AlphaNumeric
+
+~c/main.c~
+int isAlphaNumeric( char ch )
+{
+	switch ( ch )
+	{
+	case '_':
+		return 1;
+
+	default:
+		return isalnum( (unsigned char) ch );
+	}
+}
+~
