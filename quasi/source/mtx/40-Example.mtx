@@ -32,6 +32,7 @@ Quasi has now been reimplemented in pure C to maximise portability, allowing it 
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #include <errno.h>
 #include <dirent.h>
 #include <libgen.h>
@@ -59,8 +60,9 @@ Each time a target file is created the filename must be appropriately sanitised 
 
 ~c/main.c~
 int        processArguments( int argc, const char** argv );
-int  canAccessBaseDirectory( const char* baseDir, int forced );
+int      canAccessDirectory( const char* baseDir, int force );
 int      processSourceFiles( const char* baseDir, int first, int last, const char** files );
+int             processFile( const char* baseDir, const char* sourceFile );
 FILE*                 rejig( FILE* out, const char* baseDir, const char* line );
 char*  generateSafeFilepath( const char* basedir, const char* line );
 int            doWeTruncate( const char* line );
@@ -78,7 +80,7 @@ The following utility functions are also used (these are described in the append
 
 ~c/main.c~
 int       createDirectories(       char* safeFilePath );
-int         directoryExists( const char* path );
+int        directory_exists( const char* path );
 char*       parentDirectory( const char* filepath );
 char*              readline( FILE* stream );
 char*            stringCopy( const char* aString );
@@ -225,7 +227,7 @@ int processFile( const char* baseDir, const char* sourceFile )
 		while ( (line = readline( in )) )
 		{
 			if ( '~' == line[0] ) {
-				if ( out ) fprintf( out, "\n", line );
+				if ( out ) fprintf( out, "\n" );
 				out = rejig( out, baseDir, line );
 			}
 			else if ( out )
