@@ -126,18 +126,4 @@ char* stringCopy( const char* aString )
 	return copy;
 }
 </pre>
-<h2>Is AlphaNumeric</h2>
-<pre>
-int isAlphaNumeric( char ch )
-{
-	switch ( ch )
-	{
-	case '_':
-		return 1;
-
-	default:
-		return isalnum( (unsigned char) ch );
-	}
-}
-</pre>
 </article>

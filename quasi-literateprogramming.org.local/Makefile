@@ -1,19 +1,22 @@
-all: libexec quasi doc build
+all: libexec quasi content
+
+# build
 
 libexec:
-	mkdir -p libexec
-	gcc -o libexec/quasi source/legacy/main.c
+	mkdir -p _gen/libexec
+	gcc -o _gen/libexec/quasi _resources/source/legacy/quasi-2.0.0.c
 
 quasi:
-	libexec/quasi -f source source/mtx/*.mtx
+	_gen/libexec/quasi -f _resources/source _resources/source/mt/*.txt
 
-doc:
-	mkdir -p documentation/mtx
-	cat source/mtx/*.mtx > documentation/mtx/quasi.mtx.txt	
+content:
+	generate_content.sh _index         article _resources/source/mt/{10*,20*,30*,X0*}
+	generate_content.sh implementation article _resources/source/mt/{40*,A1*}
+	generate_content.sh download       article _resources/source/mt/50*
 
 build:
-	mkdir -p bin
-	gcc -o bin/quasi source/c/main.c
+	mkdir -p _resources/bin
+	gcc -o _resources/bin/quasi _resources/source/c/main.c
 
 clean:
-	rm -rf bin libexec source/c web
+	rm -rf _gen

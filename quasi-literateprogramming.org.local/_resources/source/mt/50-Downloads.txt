@@ -1,0 +1,14 @@
+
+. Downloads
+
+Distribution packages will be released soon.
+For now, simply invoke the following on your command line after downloading the '.c' file;
+then copy the resulting executable 'quasi' to a directory on your path.
+
+~
+cc -o quasi quasi-2.0.c
+~
+
+~html~      
+<a href=''>Download quasi-2.0.c</a>
+~
