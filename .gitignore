@@ -5,6 +5,8 @@ c
 
 ._*
 .DS_Store
+.dropbox
 *.tar.bz2
 *.zip
 *.gz
+Icon*
