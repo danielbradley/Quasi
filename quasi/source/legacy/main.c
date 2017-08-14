@@ -25,7 +25,7 @@ int        directory_exists( const char* path );
 char*       parentDirectory( const char* filepath );
 char*              readline( FILE* stream );
 char*            stringCopy( const char* aString );
-int          isAlphanumeric( char ch );
+int          isAlphaNumeric( char ch );
 
 int         FORCE;
 int         FIRST;
@@ -178,7 +178,7 @@ char* generateSafeFilepath( const char* basedir, const char* line )
 
 			if ( token && ('!' == token[0]) ) token++;
 
-			if ( token && isalnum( token[0] ) )
+			if ( token && isAlphaNumeric( token[0] ) )
 			{
 				full = calloc( len, sizeof( char ) );
 				strcpy( full, basedir );
