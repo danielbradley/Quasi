@@ -1,5 +1,4 @@
 <article>
-<h1>Introduction</h1>
 <p class='paragraph'>
 Donald Knuth coined the term "literate programming" to refer to a programming approach whereby a programmer develops a program "in the order demanded by logic and flow of their thoughts" [<a href='#Wikipedia' title='Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming'>1</a>].
 Rather than produce source code that is <i>commented</i> with textual descriptions, a textual description is produced that describes the structure and semantics of code <i>chunks</i> embedded within the prose.
@@ -13,24 +12,24 @@ The following code fragment from the <i>literate programming</i> Wikipedia page 
 The text '<<Scan File>>=' defines a <i>macro</i> that is associated with the code that follows it.
 </p>
 <pre>
-	&lt;&lt;Scan file&gt;&gt;=
-	while (1) {
-		&lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
-		c = *ptr++;
-		if ( c &gt; ' ' && c &lt; 0177 ) {
-			/* visible ASCII codes */
-			if ( !in_word) {
-				word_count++;
-				in_word = 1;
-			}
-			continue;
-		}
-		if ( c == '\n' ) line_count++;
-		else if ( c != ' ' && c != '\t') continue;
-		in_word = 0;
-			/* c is newline, space, or tab */
-	}
-	@
+&lt;&lt;Scan file&gt;&gt;=
+while (1) {
+    &lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
+    c = *ptr++;
+    if ( c &gt; ' ' && c &lt; 0177 ) {
+        /* visible ASCII codes */
+        if ( !in_word) {
+            word_count++;
+            in_word = 1;
+        }
+        continue;
+    }
+    if ( c == '\n' ) line_count++;
+    else if ( c != ' ' && c != '\t') continue;
+    in_word = 0;
+        /* c is newline, space, or tab */
+}
+@
 </pre>
 <p class='paragraph'>
 The macro '<<Scan File>>' could then be used in any other code <i>chunk</i>.
@@ -59,13 +58,13 @@ For example, this command would extract the following block of SQL:
 extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
 </pre>
 <pre>
-	~users_table~
-	CREATE TABLE users
-	(
-	USER        INT(11)  NOT NULL AUTO_INCREMENT
-	PRIMARY KEY (USER)
-	);
-	~
+ ~users_table~
+ CREATE TABLE users
+ (
+ USER        INT(11)  NOT NULL AUTO_INCREMENT
+ PRIMARY KEY (USER)
+ );
+ ~
 </pre>
 <p class='paragraph'>
 This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within a requirements document.
@@ -80,31 +79,31 @@ Unlike "extract", rather than matching a supplied pattern, the <i>identifier</i>
 For example, this command would extract the following block of source code and append it to the file 'source/c/quasi.c':
 </p>
 <pre>
-	quasi source source/mtx/quasi.mtx
+    quasi source source/mtx/quasi.mtx
 </pre>
 <pre>
-	~c/quasi.c~
-	int main( int argc, char** argv )
-	{
-		return 0;
-	}
-	~
+    ~c/quasi.c~
+    int main( int argc, char** argv )
+    {
+        return 0;
+    }
+    ~
 </pre>
 <p class='paragraph'>
 The tool does sanitation of the filenames, ensuring that parent directory ('..') commands aren't included and therefore that output files remain under the specified base directory.
 If the specified base directory already exists the tool will exit with an error, unless the '-f' flag is passed as the first command argument.
 </p>
 <pre>
-	quasi -f source source/mtx/quasi.mtx
+    quasi -f source source/mtx/quasi.mtx
 </pre>
 <p class='paragraph'>
 If the identifier of the pre-formatted block section is prefixed by an exclamation mark the file is truncated on opening.
 It is advisable that when a file is truncated in this manner that the code fragment be a comment warning that the file is generated:
 </p>
 <pre>
-	~!c/quasi.c~
-	/*   !!!   Warning this file is auto-generated   !!!   */
-	~
+    ~!c/quasi.c~
+    /*   !!!   Warning this file is auto-generated   !!!   */
+    ~
 </pre>
 <p class='paragraph'>
 Quasi is implemented to process text files that use the MaxText text format [<a href='#MaxText' title='MaxText will be released publicly soon.'>4</a>].
@@ -112,15 +111,15 @@ If code fragments are not appropriate for the output documentation they can be c
 This is useful for hiding code comments, or perhaps includes.
 </p>
 <pre>
-	!
-	Include various standard includes.
+    !
+    Include various standard includes.
 
-	~!c/quasi.c!~
-	#include &lt;stdio.h&gt;
-	#include &lt;stdlib.h&gt;
-	#include &lt;string.h&gt;
-	~
-	!
+    ~!c/quasi.c!~
+    #include &lt;stdio.h&gt;
+    #include &lt;stdlib.h&gt;
+    #include &lt;string.h&gt;
+    ~
+    !
 </pre>
 <p class='paragraph'>
 The key difference between literate programming tools and Quasi is that Quasi forces the programmer to construct all target source files in a linear fashion, however, separate files may still be constructed in parallel.
