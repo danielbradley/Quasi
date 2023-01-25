@@ -28,24 +28,24 @@ The following code fragment from the /literate programming/ Wikipedia page demon
 The text '<<Scan File>>=' defines a /macro/ that is associated with the code that follows it.
 
 ~
-<<Scan file>>=
-while (1) {
-    <<Fill buffer if it is empty; break at end of file>>
-    c = *ptr++;
-    if ( c > ' ' && c < 0177 ) {
-        /* visible ASCII codes */
-        if ( !in_word) {
-            word_count++;
-            in_word = 1;
+    <<Scan file>>=
+    while (1) {
+        <<Fill buffer if it is empty; break at end of file>>
+        c = *ptr++;
+        if ( c > ' ' && c < 0177 ) {
+            /* visible ASCII codes */
+            if ( !in_word) {
+                word_count++;
+                in_word = 1;
+            }
+            continue;
         }
-        continue;
+        if ( c == '\n' ) line_count++;
+        else if ( c != ' ' && c != '\t') continue;
+        in_word = 0;
+            /* c is newline, space, or tab */
     }
-    if ( c == '\n' ) line_count++;
-    else if ( c != ' ' && c != '\t') continue;
-    in_word = 0;
-        /* c is newline, space, or tab */
-}
-@
+    @
 ~
 
 The macro '<<Scan File>>' could then be used in any other code /chunk/.

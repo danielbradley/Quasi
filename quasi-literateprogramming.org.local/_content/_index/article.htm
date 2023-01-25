@@ -1,4 +1,4 @@
-<article>
+<article class='center responsive_page_width'>
 <p class='paragraph'>
 Donald Knuth coined the term "literate programming" to refer to a programming approach whereby a programmer develops a program "in the order demanded by logic and flow of their thoughts" [<a href='#Wikipedia' title='Wikipedia: literate programming. http://en.wikipedia.org/wiki/Literate_programming'>1</a>].
 Rather than produce source code that is <i>commented</i> with textual descriptions, a textual description is produced that describes the structure and semantics of code <i>chunks</i> embedded within the prose.
@@ -12,24 +12,24 @@ The following code fragment from the <i>literate programming</i> Wikipedia page 
 The text '<<Scan File>>=' defines a <i>macro</i> that is associated with the code that follows it.
 </p>
 <pre>
-&lt;&lt;Scan file&gt;&gt;=
-while (1) {
-    &lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
-    c = *ptr++;
-    if ( c &gt; ' ' && c &lt; 0177 ) {
-        /* visible ASCII codes */
-        if ( !in_word) {
-            word_count++;
-            in_word = 1;
+    &lt;&lt;Scan file&gt;&gt;=
+    while (1) {
+        &lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
+        c = *ptr++;
+        if ( c &gt; ' ' && c &lt; 0177 ) {
+            /* visible ASCII codes */
+            if ( !in_word) {
+                word_count++;
+                in_word = 1;
+            }
+            continue;
         }
-        continue;
+        if ( c == '\n' ) line_count++;
+        else if ( c != ' ' && c != '\t') continue;
+        in_word = 0;
+            /* c is newline, space, or tab */
     }
-    if ( c == '\n' ) line_count++;
-    else if ( c != ' ' && c != '\t') continue;
-    in_word = 0;
-        /* c is newline, space, or tab */
-}
-@
+    @
 </pre>
 <p class='paragraph'>
 The macro '<<Scan File>>' could then be used in any other code <i>chunk</i>.
@@ -55,21 +55,24 @@ The tool would scan text files and extract the text of pre-formatted sections th
 For example, this command would extract the following block of SQL:
 </p>
 <pre>
-extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
+    extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
 </pre>
 <pre>
- ~users_table~
- CREATE TABLE users
- (
- USER        INT(11)  NOT NULL AUTO_INCREMENT
- PRIMARY KEY (USER)
- );
- ~
+    ~users_table~
+    CREATE TABLE users
+    (
+    USER        INT(11)  NOT NULL AUTO_INCREMENT
+    PRIMARY KEY (USER)
+    );
+    ~
 </pre>
-<p class='paragraph'>
+<pre data-path=' '>
+
 This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within a requirements document.
 This provided the motivation for developing a similar tool to also extract source code from documentation.
-</p>
+
+
+</pre>
 <h1>Concept</h1>
 <p class='paragraph'>
 Similar to "extract", "quasi" extracts sections of pre-formatted text from documentation and appends it to <i>target</i> text files.

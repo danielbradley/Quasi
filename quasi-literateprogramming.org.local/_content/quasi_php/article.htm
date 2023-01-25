@@ -1,4 +1,4 @@
-<article>
+<article class='center responsive_page_width'>
 <h2>Quasi.PHP</h2>
 <p class='paragraph'>
 Quasi.PHP is an implementation of Quasi that is used for preprocessing text files into served Javascript and
@@ -20,7 +20,8 @@ foreach ( $output as $path =&gt; $string )
     echo $string
 }
 </pre>
-<pre>
+<code>
+<pre data-path='php/Quasi.php'>
 function Quasi( $files, $suffix = "" )
 {
     $output = array();
@@ -163,4 +164,5 @@ function QuasiReplace( $content, $array )
     return $content;
 }
 </pre>
+</code>
 </article>

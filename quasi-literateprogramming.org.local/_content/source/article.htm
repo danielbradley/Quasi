@@ -21,22 +21,6 @@ You should have received a copy of the GNU General Public License
 along with Foobar.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
 !
 
-~html~
-&lt;div style='height:25px'&gt;
-    &lt;!-- Place this tag where you want the +1 button to render --&gt;
-    &lt;g:plusone&gt;&lt;/g:plusone&gt;
-&lt;/div&gt;
-
-&lt;!-- Place this render call where appropriate --&gt;
-&lt;script type="text/javascript"&gt;
-  (function() {
-    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
-    po.src = 'https://apis.google.com/js/plusone.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
-  })();
-&lt;/script&gt;
-~
-
 -	Quasi - a tool for quasi-literate programming
 
 ~html~
@@ -105,24 +89,24 @@ The following code fragment from the /literate programming/ Wikipedia page demon
 The text '&lt;&lt;Scan File&gt;&gt;=' defines a /macro/ that is associated with the code that follows it.
 
 ~
-&lt;&lt;Scan file&gt;&gt;=
-while (1) {
-    &lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
-    c = *ptr++;
-    if ( c &gt; ' ' && c &lt; 0177 ) {
-        /* visible ASCII codes */
-        if ( !in_word) {
-            word_count++;
-            in_word = 1;
+    &lt;&lt;Scan file&gt;&gt;=
+    while (1) {
+        &lt;&lt;Fill buffer if it is empty; break at end of file&gt;&gt;
+        c = *ptr++;
+        if ( c &gt; ' ' && c &lt; 0177 ) {
+            /* visible ASCII codes */
+            if ( !in_word) {
+                word_count++;
+                in_word = 1;
+            }
+            continue;
         }
-        continue;
+        if ( c == '\n' ) line_count++;
+        else if ( c != ' ' && c != '\t') continue;
+        in_word = 0;
+            /* c is newline, space, or tab */
     }
-    if ( c == '\n' ) line_count++;
-    else if ( c != ' ' && c != '\t') continue;
-    in_word = 0;
-        /* c is newline, space, or tab */
-}
-@
+    @
 ~
 
 The macro '&lt;&lt;Scan File&gt;&gt;' could then be used in any other code /chunk/.
@@ -162,17 +146,17 @@ The tool would scan text files and extract the text of pre-formatted sections th
 
 For example, this command would extract the following block of SQL:
 ~
-extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
+    extract -p "users_table" source_file.txt &gt;&gt; output_file.sql
 ~
 
 ~
- ~users_table~
- CREATE TABLE users
- (
- USER        INT(11)  NOT NULL AUTO_INCREMENT
- PRIMARY KEY (USER)
- );
- ~
+    ~users_table~
+    CREATE TABLE users
+    (
+    USER        INT(11)  NOT NULL AUTO_INCREMENT
+    PRIMARY KEY (USER)
+    );
+    ~
 ~ 
 
 This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within a requirements document.

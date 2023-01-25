@@ -25,7 +25,7 @@ The tool would scan text files and extract the text of pre-formatted sections th
 
 For example, this command would extract the following block of SQL:
 ~
-extract -p "users_table" source_file.txt >> output_file.sql
+    extract -p "users_table" source_file.txt >> output_file.sql
 ~
 
 ~
