@@ -1,43 +1,54 @@
-arch := $(shell uname)
+arch   := $(shell uname)
+cpu    := $(shell uname -m)
+target := _bin/$(arch)-$(cpu)
+web    := web/com.quasi-literateprogramming
+
 version=2.0
 
-all: legacy provisional final content maxtext download
+all: legacy provisional final website
 
-legacy:
-	mkdir -p _gen/libexec/$(arch)
-	gcc -o _gen/libexec/$(arch)/quasi_legacy _resources/source/legacy/quasi-2.0.0.c
+legacy: $(target)/quasi_legacy
 
-provisional:
-	mkdir -p _gen/src/provisional
-	_gen/libexec/$(arch)/quasi_legacy -f _gen/src/provisional _resources/source/mt/*.txt
-	gcc -o _gen/libexec/$(arch)/quasi_provisional _gen/src/provisional/c/main.c
+$(target)/quasi_legacy:
+	mkdir -p $(target)
+	gcc -o $(target)/quasi_legacy source/legacy/quasi-2.0.0.c
 
-final:
-	mkdir -p _gen/src/final
-	_gen/libexec/$(arch)/quasi_provisional -f _gen/src/final _resources/source/mt/*.txt
-	gcc -o _gen/libexec/$(arch)/quasi _gen/src/final/c/main.c
+provisional: $(target)/quasi_provisional
+
+$(target)/quasi_provisional: legacy
+	$(target)/quasi_legacy -f _gen/src/provisional source/mt/*.txt
+	gcc -o $(target)/quasi_provisional _gen/src/provisional/c/main.c
+
+final: $(target)/quasi
+
+$(target)/quasi: provisional
+	echo "Target: $(target)/quasi_provisional"
+	$(target)/quasi_provisional -f _gen/src/final source/mt/*.txt
+	gcc -o $(target)/quasi _gen/src/final/c/main.c
+
+website: content download
 
 content:
-	generate_content.sh _content/_index         article _resources/source/mt/{10*,20*,30*,X0*}
-	generate_content.sh _content/implementation article _resources/source/mt/{40*,A1*}
-	generate_content.sh _content/quasi_php      article _resources/source/mt/41*
-	generate_content.sh _content/downloads      article _resources/source/mt/50*
-
-maxtext:
-	mkdir -p _content/source
-	echo "<article>"                                                        > _content/source/article.htm
-	echo "<h1>Source: MaxText formatted source documentation</h1>"         >> _content/source/article.htm
-	echo "<pre>"                                                           >> _content/source/article.htm
-	cat _resources/source/mt/*.txt | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g' >> _content/source/article.htm
-	echo "</pre></article>"                                                >> _content/source/article.htm
+	rsync -avz $(web)/source/content/*   $(web)/_content
+	rsync -avz $(web)/source/resources/* $(web)/_resources
+	generate_content.sh $(web)/_content/_index         article source/mt/{10*,20*,30*,X0*}
+	generate_content.sh $(web)/_content/implementation article source/mt/{40*,A1*}
+	generate_content.sh $(web)/_content/quasi_php      article source/mt/41*
+	generate_content.sh $(web)/_content/downloads      article source/mt/50*
+	mkdir -p $(web)/_content/source
+	echo "<article>"                                                > $(web)/_content/source/article.htm
+	echo "<h1>Source: MaxText formatted source documentation</h1>"  >> $(web)/_content/source/article.htm
+	echo "<pre>"                                                    >> $(web)/_content/source/article.htm
+	cat  source/mt/*.txt | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g'    >> $(web)/_content/source/article.htm
+	echo "</pre></article>"                                         >> $(web)/_content/source/article.htm
 
 download:
-	mkdir -p _resources/downloads/$(version)
-	cp _gen/src/final/c/main.c      _resources/downloads/$(version)/quasi.c
-	cp _gen/src/final/php/Quasi.php _resources/downloads/$(version)/Quasi.php.txt
+	mkdir -p $(web)/_resources/downloads/$(version)
+	cp _gen/src/final/c/main.c      $(web)/_resources/downloads/$(version)/quasi.c
+	cp _gen/src/final/php/Quasi.php $(web)/_resources/downloads/$(version)/Quasi.php.txt
 
-public:
-	rsync -avz _content _resources ../../../_Public/com.quasi-literateprogramming
+public: website
+	rsync -avz $(web)/_content $(web)/_resources ../../_Public/com.quasi-literateprogramming
 
 clean:
 	rm -rf _gen
