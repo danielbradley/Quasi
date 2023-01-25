@@ -29,13 +29,13 @@ extract -p "users_table" source_file.txt >> output_file.sql
 ~
 
 ~
-	~users_table~
-	CREATE TABLE users
-	(
-	USER        INT(11)  NOT NULL AUTO_INCREMENT
-	PRIMARY KEY (USER)
-	);
-	~
+    ~users_table~
+    CREATE TABLE users
+    (
+    USER        INT(11)  NOT NULL AUTO_INCREMENT
+    PRIMARY KEY (USER)
+    );
+    ~
 ~ 
 
 This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within a requirements document.

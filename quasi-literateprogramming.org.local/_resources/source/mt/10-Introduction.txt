@@ -18,8 +18,6 @@ You should have received a copy of the GNU General Public License
 along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 !
 
-.	Introduction
-
 Donald Knuth coined the term "literate programming" to refer to a programming approach whereby a programmer develops a program "in the order demanded by logic and flow of their thoughts" [Wikipedia].
 Rather than produce source code that is /commented/ with textual descriptions, a textual description is produced that describes the structure and semantics of code /chunks/ embedded within the prose.
 
@@ -30,24 +28,24 @@ The following code fragment from the /literate programming/ Wikipedia page demon
 The text '<<Scan File>>=' defines a /macro/ that is associated with the code that follows it.
 
 ~
-	<<Scan file>>=
-	while (1) {
-		<<Fill buffer if it is empty; break at end of file>>
-		c = *ptr++;
-		if ( c > ' ' && c < 0177 ) {
-			/* visible ASCII codes */
-			if ( !in_word) {
-				word_count++;
-				in_word = 1;
-			}
-			continue;
-		}
-		if ( c == '\n' ) line_count++;
-		else if ( c != ' ' && c != '\t') continue;
-		in_word = 0;
-			/* c is newline, space, or tab */
-	}
-	@
+<<Scan file>>=
+while (1) {
+    <<Fill buffer if it is empty; break at end of file>>
+    c = *ptr++;
+    if ( c > ' ' && c < 0177 ) {
+        /* visible ASCII codes */
+        if ( !in_word) {
+            word_count++;
+            in_word = 1;
+        }
+        continue;
+    }
+    if ( c == '\n' ) line_count++;
+    else if ( c != ' ' && c != '\t') continue;
+    in_word = 0;
+        /* c is newline, space, or tab */
+}
+@
 ~
 
 The macro '<<Scan File>>' could then be used in any other code /chunk/.

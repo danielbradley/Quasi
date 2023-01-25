@@ -21,12 +21,12 @@ along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 ,	Bibliography
 
 [Wikipedia]	Wikipedia: literate programming.
-		http://en.wikipedia.org/wiki/Literate_programming
+        http://en.wikipedia.org/wiki/Literate_programming
 
 [Web]		The CWEB System of Structured Documentation
-		http://www-cs-faculty.stanford.edu/~uno/cweb.html
+        http://www-cs-faculty.stanford.edu/~uno/cweb.html
 
 [Noweb]		Noweb - A Simple, Extensible Tool for Literate Programming
-		http://www.cs.tufts.edu/~nr/noweb/
+        http://www.cs.tufts.edu/~nr/noweb/
 
 [MaxText]	MaxText will be released publicly soon.

@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 !
 
-.	Example: quasi implementation
+. Implementation
 
 Quasi has now been reimplemented in pure C to maximise portability, allowing it to act as the foundation of an organisation's development tool set.
 
@@ -44,7 +44,7 @@ Quasi has now been reimplemented in pure C to maximise portability, allowing it 
 To ensure simplicity of implementation, Quasi is invoked with a simple command-line.
 
 ~
-	quasi [-f] BASE_DIR INPUT_FILES...
+    quasi [-f] BASE_DIR INPUT_FILES...
 ~
 
 The /BASE DIR/ argument specifies the directory that target files are created relative to -- if the /BASE DIR/ already exists, Quasi exits returning an error, unless the '-f' flag is passed as the first argument.
@@ -59,13 +59,14 @@ During processing, the output files are opened and closed (rejig) as necessary.
 Each time a target file is created the filename must be appropriately sanitised (generateSafeFilepath) and it must be determined whether to truncate the file or not (doWeTruncate).
 
 ~c/main.c~
-int        processArguments( int argc, const char** argv );
-int      canAccessDirectory( const char* baseDir, int force );
-int      processSourceFiles( const char* baseDir, int first, int last, const char** files );
-int             processFile( const char* baseDir, const char* sourceFile );
-FILE*                 rejig( FILE* out, const char* baseDir, const char* line );
-char*  generateSafeFilepath( const char* basedir, const char* line );
-int            doWeTruncate( const char* line );
+int           processArguments( int argc, const char** argv );
+int         canAccessDirectory( const char* baseDir, int force );
+int         processSourceFiles( const char* baseDir, int first, int last, const char** files );
+int                processFile( const char* baseDir, const char* sourceFile );
+int    isPreformattedDelimiter( const char* line );
+FILE*                    rejig( FILE* out, const char* baseDir, const char* line );
+char*     generateSafeFilepath( const char* basedir, const char* line );
+int               doWeTruncate( const char* line );
 ~
 
 If inappropriate arguments are passed, Quasi prints a usage message (usage) and exits with an error.
@@ -84,6 +85,7 @@ int        directory_exists( const char* path );
 char*       parentDirectory( const char* filepath );
 char*              readline( FILE* stream );
 char*            stringCopy( const char* aString );
+int         stringHasPrefix( const char* aString, const char* prefix );
 int          isAlphaNumeric( char ch );
 ~
 
@@ -101,25 +103,25 @@ The main function calls the appropriate functions as needed.
 ~c/main.c~
 int main( int argc, const char** argv )
 {
-	int status = 0;
+    int status = 0;
 
-	if ( processArguments( argc, argv ) )
-	{
-		if ( canAccessDirectory( BASE_DIR, FORCE ) )
-		{
-			int last = argc - 1;
-			status = processSourceFiles( BASE_DIR, FIRST, last, argv );
-		}
-		else
-		{
-			status = errorDirectoryExists();
-		}
-	}
-	else
-	{
-		status = usage();
-	}
-	return !status;
+    if ( processArguments( argc, argv ) )
+    {
+        if ( canAccessDirectory( BASE_DIR, FORCE ) )
+        {
+            int last = argc - 1;
+            status = processSourceFiles( BASE_DIR, FIRST, last, argv );
+        }
+        else
+        {
+            status = errorDirectoryExists();
+        }
+    }
+    else
+    {
+        status = usage();
+    }
+    return !status;
 }
 ~
 
@@ -133,23 +135,23 @@ Finally, if there is at least one file argument remaining, the global variable /
 ~c/main.c~
 int processArguments( int argc, const char** argv )
 {
-	int status             = 0;
-	int expected_arguments = 3;
-	int i                  = 1;
+    int status             = 0;
+    int expected_arguments = 3;
+    int i                  = 1;
 
-	if ( argc >= expected_arguments )
-	{
-		if ( 0 == strcmp( argv[i], "-f" ) )
-		{
-			expected_arguments++;
-			i++;
-			FORCE = 1;
-		}
-		BASE_DIR = argv[i]; i++;
-		FIRST    = i;
-		status   = ( argc >= expected_arguments );
-	}
-	return status;	
+    if ( argc >= expected_arguments )
+    {
+        if ( 0 == strcmp( argv[i], "-f" ) )
+        {
+            expected_arguments++;
+            i++;
+            FORCE = 1;
+        }
+        BASE_DIR = argv[i]; i++;
+        FIRST    = i;
+        status   = ( argc >= expected_arguments );
+    }
+    return status;	
 }
 ~
 
@@ -163,22 +165,22 @@ Otherwise, the method returns false (0).
 ~c/main.c~
 int canAccessDirectory( const char* baseDir, int force )
 {
-	int status = 0;
+    int status = 0;
 
-	if ( 0 == mkdir( baseDir, 0755 ) )
-	{
-		status = 1;
-	}
-	else
-	{
-		switch ( errno )
-		{
-		case EEXIST:
-			status = force;
-			break;
-		}
-	}
-	return status;
+    if ( 0 == mkdir( baseDir, 0755 ) )
+    {
+        status = 1;
+    }
+    else
+    {
+        switch ( errno )
+        {
+        case EEXIST:
+            status = force;
+            break;
+        }
+    }
+    return status;
 }
 ~
 
@@ -189,13 +191,13 @@ For each source file, the *processFile* function is called passing the /baseDir/
 ~c/main.c~
 int processSourceFiles( const char* baseDir, int first, int last, const char** files )
 {
-	int status = 1;
-	int i;
-	for ( i=first; i <= last; i++ )
-	{
-		status &= processFile( baseDir, files[i] );
-	}
-	return status;
+    int status = 1;
+    int i;
+    for ( i=first; i <= last; i++ )
+    {
+        status &= processFile( baseDir, files[i] );
+    }
+    return status;
 }
 ~
 
@@ -216,37 +218,62 @@ This causes a warning message to be printed to /stderr/ and the function returns
 ~c/main.c~
 int processFile( const char* baseDir, const char* sourceFile )
 {
-	int status = 0;
-	fprintf( stdout, "Processing: %s\n", sourceFile );
+    int status = 0;
+    fprintf( stdout, "Processing: %s\n", sourceFile );
 
-	FILE* in = fopen( sourceFile, "r" );
-	if ( in )
-	{
-		FILE* out = NULL;
+    FILE* in = fopen( sourceFile, "r" );
+    if ( in )
+    {
+        FILE* out = NULL;
 
-		char* line;
-		while ( (line = readline( in )) )
-		{
-			if ( '~' == line[0] ) {
-				if ( out ) fprintf( out, "\n" );
-				out = rejig( out, baseDir, line );
-			}
-			else if ( out )
-			{
-				fprintf( out, "%s", line );
-			}
-		}
-		fclose( in );
+        char* line;
+        while ( (line = readline( in )) )
+        {
+            if ( isPreformattedDelimiter( line ) )
+            {
+                if ( out )
+                {
+                    fprintf( out, "\n" );
+                }
+                out = rejig( out, baseDir, line );
+            }
+            else if ( out )
+            {
+                fprintf( out, "%s", line );
+            }
+        }
+        fclose( in );
 
-		if ( out )
-		{
-			fclose( out );
-			fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
-		}
-		status = (out == NULL);
-	}
+        if ( out )
+        {
+            fclose( out );
+            fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
+        }
+        status = (out == NULL);
+    }
 
-	return status;
+    return status;
+}
+~
+
+...         Is preformatted delimiter
+
+A line is considered a delimiter for a section of pre-formatted text
+if it begins with either:
+a tilde character ('~') - the delimiter of MaxText formatted files;
+or a triplet of back-tick characters ("```") - the delimiter for Markdown files.
+
+~c/main.c~
+int isPreformattedDelimiter( const char* line )
+{
+    switch( line[0] )
+    {
+    case '~':
+        return 1;
+
+    default:
+        return stringHasPrefix( line, "```" );
+    }
 }
 ~
 
@@ -259,25 +286,25 @@ If "doWeTruncate" returns true, the file is truncated on open.
 ~c/main.c~
 FILE* rejig( FILE* out, const char* basedir, const char* line )
 {
-	FILE* ret = NULL;
+    FILE* ret = NULL;
 
-	if ( out ) fclose( out );
+    if ( out ) fclose( out );
 
-	char* safeFilePath = generateSafeFilepath( basedir, line );
-	if ( safeFilePath && createDirectories( parentDirectory( safeFilePath ) ) )
-	{
-		if ( doWeTruncate( line ) )
-		{
-			ret = fopen( safeFilePath, "w" );
-		}
-		else
-		{
-			ret = fopen( safeFilePath, "a" );
-		}
-	}
-	free( safeFilePath );
+    char* safeFilePath = generateSafeFilepath( basedir, line );
+    if ( safeFilePath && createDirectories( parentDirectory( safeFilePath ) ) )
+    {
+        if ( doWeTruncate( line ) )
+        {
+            ret = fopen( safeFilePath, "w" );
+        }
+        else
+        {
+            ret = fopen( safeFilePath, "a" );
+        }
+    }
+    free( safeFilePath );
 
-	return ret;
+    return ret;
 }
 ~
 
@@ -289,42 +316,69 @@ The passed line starts with a tilde character but may have anything else as well
 First, the line is checked to make sure it doesn't include '..', which could potentially reference a directory above the /base dir/.
 Next, the line is checked to ensure it includes a period, '.', either indicating a relative directory path, or the beginning of a file type suffix -- this is to avoid MaxText pre-formatted text tags.
 Then, 'strtok' is used to tokenise the line using the tilde as a delimiter.
-The first token returned is treated as the filepath -- first it is checked to make sure it is alpha-numerical chacter (indicating an appropraite filename), then strtok is called again to verify that the token is trailed by another tilde.
+The first token returned is treated as the filepath -- first it is checked to make sure it is alpha-numerical chacter (indicating an appropraite filename),
+then strtok is called again to verify that the token is trailed by another tilde if the file is in MaxText format.
+Note, Markdown pre-formatted delimiters do not have a trailing delimiter,
+therefore, when parsing Markdown files, the newline character is also passed as a delimiter.
 
 If there are any problems NULL is returned.
 
 ~c/main.c~
+typedef enum _Format { MARKDOWN, MAXTEXT } Format;
+
 char* generateSafeFilepath( const char* basedir, const char* line )
 {
-	char* full = NULL;
+    char* full = NULL;
+    int   last = 0;
 
-	int len = strlen( basedir ) + strlen( line ) + 1;
-	if ( NULL == strstr( line, ".." ) )
-	{
-		if ( NULL != strstr( line, "." ) )
-		{
-			char* test  = stringCopy( line );	
-			char* token = strtok( test, "~" );
+    Format format = ('~' == line[0]) ? MAXTEXT : MARKDOWN;
 
-			if ( token && ('!' == token[0]) ) token++;
+    int len = strlen( basedir ) + strlen( line ) + 1;
+    if ( NULL == strstr( line, ".." ) )
+    {
+        if ( NULL != strstr( line, "." ) )
+        {
+            char* test  = stringCopy( line );	
+            char* token = ('~' == line[0]) ? strtok( test, "~" ) : strtok( test, "`\n" );
 
-			if ( token && isAlphaNumeric( token[0] ) )
-			{
-				full = calloc( len, sizeof( char ) );
-				strcpy( full, basedir );
-				strcat( full, "/" );
-				strcat( full, token );
+            if ( token && ('!' == token[0]) ) token++;
 
-				if ( NULL == strtok( NULL, "~" ) )
-				{
-					free( full );
-					full = NULL;
-				}
-			}
-			free( test );
-		}
-	}
-	return full;
+            if ( token && isAlphaNumeric( token[0] ) )
+            {
+                full = calloc( len, sizeof( char ) );
+                strcpy( full, basedir );
+                strcat( full, "/" );
+                strcat( full, token );
+
+                switch ( format )
+                {
+                case MARKDOWN:
+                    // Markdown does not require end delimiter,
+                    // which seems to cause a trailing '?' to be added to the token...
+                    last = strlen( full ) - 2;
+
+                    if ( '?' == full[last] )
+                    {
+                        full[last] = '\0';
+                    }
+                    break;
+
+                case MAXTEXT:
+                    if ( NULL == strtok( NULL, "~" ) )
+                    {
+                        free( full );
+                        full = NULL;
+                    }
+                    break;
+                }
+            }
+            free( test );
+        }
+    }
+
+
+
+    return full;
 }
 ~
 
@@ -335,12 +389,25 @@ The output file is truncated on open if the source file name is proceeded by an 
 ~c/main.c~
 int doWeTruncate( const char* line )
 {
-	int truncate = 0;
-	if ( 2 < strlen( line ) )
-	{
-		truncate = ('!' == line[1]);
-	}
-	return truncate;
+    int truncate = 0;
+
+    switch( line[0] )
+    {
+    case '~':
+        if ( 2 < strlen( line ) )
+        {
+            truncate = ('!' == line[1]);
+        }
+        break;
+
+    case '`':
+        if ( 4 < strlen( line ) )
+        {
+            truncate = ('!' == line[3]);
+        }
+        break;
+    }
+    return truncate;
 }
 ~
 
@@ -351,15 +418,15 @@ int doWeTruncate( const char* line )
 If the program is invoked without the appropriate arguments the following usage message is printed to /stderr/.
 ~
 Usage:
-	quasi [-f] BASE_DIR INPUT_FILES
+    quasi [-f] BASE_DIR INPUT_FILES
 ~
 
 ~c/main.c~
 int usage()
 {
-	const char* ch = "Usage:\n\t quasi [-f] BASE_DIR INPUT_FILES";
-	fprintf( stderr, "%s\n", ch );
-	return 0;
+    const char* ch = "Usage:\n\t quasi [-f] BASE_DIR INPUT_FILES";
+    fprintf( stderr, "%s\n", ch );
+    return 0;
 }
 ~
 
@@ -367,14 +434,14 @@ int usage()
 
 If the force ('-f') flag hasn't been passed, and the base directory already exists, the following error message is printed to /stderr/.
 ~
-	Error: directory already exists, or cannot be created!
+    Error: directory already exists, or cannot be created!
 ~
 
 ~c/main.c~
 int errorDirectoryExists()
 {
-	const char* ch = "Error: directory already exists, or cannot be created!";
-	fprintf( stderr, "%s\n", ch );
-	return 0;
+    const char* ch = "Error: directory already exists, or cannot be created!";
+    fprintf( stderr, "%s\n", ch );
+    return 0;
 }
 ~

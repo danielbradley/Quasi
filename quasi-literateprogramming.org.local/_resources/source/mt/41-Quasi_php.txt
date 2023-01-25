@@ -1,0 +1,197 @@
+
+.. Quasi.PHP
+
+Quasi.PHP is an implementation of Quasi that is used for preprocessing text files into served Javascript and
+CSS files.
+In contrast to the command-line version of Quasi,
+this version does not write files to disk but rather creates a string for each file,
+which is then returned in an associative array to the caller.
+Also, the names of the files to be processed are passed as an array.
+
+For example:
+
+~
+$files  = QuasiFilesMatching( ".txt" ); // e.g., ["0-Frontmatter.txt", "1-Overview.txt", "2-Body.txt"]
+$output = Quasi( $files, ".js" );       // Only return Javascript files
+
+foreach ( $output as $path => $string )
+{
+    echo $string
+}
+~
+
+!
+~!php/Quasi.php~
+<?php
+
+//    Copyright 2017 Daniel Robert Bradley. All rights reserved.
+//    Available under the GPL Version 3 License
+//
+//    Quasi extracts source code  from quasi-literate programming documentation files.
+//    This incarnation of Quasi is implemented in PHP and is intended for extracting CSS statements
+//    out of quasi-literate programming files.
+//
+//    In contrast to the command-line version of Quasi, this version does not write files to disk
+//    but rather creates a string for each file, which is then returned in an associative array
+//    to the caller. Also, the names of the files to be processed are passed as an array.
+//
+//    For example:
+//
+//    $files[] = "0-Frontmater.txt";
+//    $files[] = "1-Overview.txt";
+//    $files[] = "2-Body.txt";
+//
+//    $output = Quasi( $files )
+//
+//    foreach ( $output as $path => $string )
+//    {
+//        echo $string
+//    }
+
+define( "QUASI_DEBUG", FALSE );
+~
+!
+
+~php/Quasi.php~
+function Quasi( $files, $suffix = "" )
+{
+    $output = array();
+
+    foreach ( $files as $filepath )
+    {
+        Process( $output, $filepath, $suffix );
+    }
+
+    return $output;
+}
+
+function Process( &$output, $filepath, $suffix )
+{
+    $content = file_get_contents( $filepath );
+    $lines   = explode( "\n", $content );
+    $inside  = false;
+    $file    = "";
+    $linenum = 0;
+
+    foreach ( $lines as $line )
+    {
+        $linenum++;
+
+        if ( 0 < strlen( $line ) && ("~" == $line[0]) )
+        {
+            $inside = ! $inside;
+
+            if ( ! $inside )
+            {
+                $file = "";
+            }
+            else
+            {
+                $provisional = substr( $line, 1, -1 );
+
+                if ( QuasiEndsWith( $provisional, $suffix ) )
+                {
+                    $file = $provisional;
+
+                    if ( ! array_key_exists( $file, $output ) ) $output[$file] = "";
+
+                    $output[$file] .= "\n" . "/* Generated from $filepath:$linenum using Quasi.php */" . "\n\n";
+                }
+            }
+        }
+        else
+        if ( $inside && ("" != $file) )
+        {
+            $output[$file] .= $line . "\n";
+        }
+    }
+}
+
+//
+//  Helper functions
+//
+
+function QuasiFilesMatching( $suffix )
+{
+    $files = array();
+    $list = scandir( "." );
+
+    foreach ( $list as $index => $file )
+    {
+        if ( QuasiEndsWith( $file, $suffix ) )
+        {
+            $files[] = $file;
+        }
+    }
+    return $files;
+}
+
+function QuasiEndsWith( $file, $suffix )
+{
+    $length = strlen($suffix);
+
+    return $length === 0 || (substr($file, -$length) === $suffix);
+}
+
+function QuasiCreateVariablesDictionary( $filename )
+{
+    $dict                = array();
+    $variables_file_path = dirname( __FILE__ ) . "/" . $filename;
+
+    if ( file_exists( $variables_file_path ) )
+    {
+        $contents = file_get_contents( $variables_file_path );
+
+        $lines = explode( "\n", $contents );
+
+        foreach ( $lines as $line )
+        {
+            $trimmed = trim( $line );
+
+            if ( 0 === strpos( $trimmed, '--' ) )
+            {
+                if ( defined( "QUASI_DEBUG" ) && QUASI_DEBUG ) error_log( $trimmed );
+                $bits = explode( ":", $trimmed );
+                if ( defined( "QUASI_DEBUG" ) && QUASI_DEBUG ) error_log( var_export( $bits, true ) );
+
+                if ( 1 < count( $bits ) )
+                {
+                    $name  = trim( $bits[0] );
+                    $value = trim( $bits[1] );
+                    $value = trim( str_replace( ';', '', $value ) );
+
+                    $key   = "var($name)";
+
+                    if ( defined( "QUASI_DEBUG" ) && QUASI_DEBUG ) error_log( "dict[$key] = $value" );
+
+                    $dict[$key] = $value . " /* $name */";
+                }
+            }
+        }
+    }
+    return $dict;
+}
+
+function QuasiRetrieveCSS( $filename )
+{
+    $contents      = FALSE;
+    $css_file_path = dirname( __FILE__ ) . "/" . $filename;
+
+    if ( file_exists( $css_file_path ) )
+    {
+        $contents = file_get_contents( $css_file_path );
+    }
+
+    return $contents;
+}
+
+function QuasiReplace( $content, $array )
+{
+    foreach ( $array as $key => $value )
+    {
+        $content = str_replace( $key, $value, $content );
+    }
+
+    return $content;
+}
+~

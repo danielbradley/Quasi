@@ -18,66 +18,66 @@ You should have received a copy of the GNU General Public License
 along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 !
 
-,	Appendix A
+,,	Appendix A
 
 Quasi uses the following generic auxiliary functions.
 
-..	Create directories
+...	Create directories
 
 This is a recursive procedure that finds the first existing directory, then unwinds creating the necessary directories.
 
 ~c/main.c~
 int createDirectories( char* dir )
 {
-	int success = 1;
-	if ( ! directory_exists( dir ) )
-	{
-		if ( createDirectories( parentDirectory( dir ) ) )
-		{
-			success = ! mkdir( dir, 0755 );
-		}
-	}
-	free( dir );
-	return success;
+    int success = 1;
+    if ( ! directory_exists( dir ) )
+    {
+        if ( createDirectories( parentDirectory( dir ) ) )
+        {
+            success = ! mkdir( dir, 0755 );
+        }
+    }
+    free( dir );
+    return success;
 }
 ~
 
-..	Directory exists
+...	Directory exists
 
 A simple procedure that determines whether a directory exists or not.
 
 ~c/main.c~
 int directory_exists( const char* path )
 {
-	int status = 0;
-	DIR* dir = opendir( path );
-	if ( dir )
-	{
-		closedir( dir );
-		status = 1;
-	}
-	return status;
+    int status = 0;
+    DIR* dir = opendir( path );
+    if ( dir )
+    {
+        closedir( dir );
+        status = 1;
+    }
+    return status;
 }
 ~
 
-..	Parent directory
+...	Parent directory
 
 A simple wrapper around "dirname" that allocates and returns a string.
 Note: due to /dirname/ returning its own storage, can't just call:
 ~
-	return stringcopy( dirname( filepath ) );
+    return stringcopy( dirname( filepath ) );
 ~
 
 ~c/main.c~
 char* parentDirectory( const char* filepath )
 {
-	char*  ret = stringCopy( filepath );
-	strcpy( ret, dirname( ret ) );
-	return ret;
+    char*  ret = stringCopy( filepath );
+    strcpy( ret, dirname( ret ) );
+    return ret;
 }
 ~
 
-..		Read line
+... Read line
 
 The "readline" procedure reads individual characters into a character buffer --
 each character is appended to the char string "line".
@@ -92,74 +92,83 @@ From memory, the POSIX function is implemented differently on different systems.
 ~c/main.c~
 char* readline( FILE* stream )
 {
-	int  n     = 0;
-	int  sz    = 1024;
-	char ch[2] = { 0, 0 };
-	char* line = calloc( sz, sizeof( char ) );
+    int  n     = 0;
+    int  sz    = 1024;
+    char ch[2] = { 0, 0 };
+    char* line = calloc( sz, sizeof( char ) );
 
-	int read;
-	do
-	{
-		read = fread( ch, sizeof(char), 1, stream );
-		if ( read )
-		{
-			switch ( *ch )
-			{
-			case '\n':
-				line[n++] = *ch;
-				line[n]   = '\0';
-				read      = 0;
-				break;
-			default:
-				line[n++] = *ch;
-				line[n]   = '\0';
-			}
+    int read;
+    do
+    {
+        read = fread( ch, sizeof(char), 1, stream );
+        if ( read )
+        {
+            switch ( *ch )
+            {
+            case '\n':
+                line[n++] = *ch;
+                line[n]   = '\0';
+                read      = 0;
+                break;
+            default:
+                line[n++] = *ch;
+                line[n]   = '\0';
+            }
 
-			if ( n == sz )
-			{
-				sz  *= 2;
-				line = realloc( line, sz );
-			}
-		}
-		
-	}
-	while ( 0 != read );
+            if ( n == sz )
+            {
+                sz  *= 2;
+                line = realloc( line, sz );
+            }
+        }
+        
+    }
+    while ( 0 != read );
 
-	if ( 0 == n )
-	{
-		free( line );
-		line = NULL;
-	}
+    if ( 0 == n )
+    {
+        free( line );
+        line = NULL;
+    }
 
-	return line;
+    return line;
 }
 ~
 
-..		String copy
+... String copy
 
 Returns a copy of the passed string.
 
 ~c/main.c~
 char* stringCopy( const char* aString )
 {
-	char* copy = calloc( strlen( aString) + 1, sizeof( char ) );
-	strcpy( copy, aString );
-	return copy;
+    char* copy = calloc( strlen( aString) + 1, sizeof( char ) );
+    strcpy( copy, aString );
+    return copy;
 }
 ~
 
-..		Is AlphaNumeric
+... String prefix
+
+~c/main.c~
+int stringHasPrefix( const char* aString, const char* prefix )
+{
+    return (0 < strlen( prefix )) && (aString == strstr( aString, prefix ));
+}
+~
+
+... Is AlphaNumeric
 
 ~c/main.c~
 int isAlphaNumeric( char ch )
 {
-	switch ( ch )
-	{
-	case '_':
-		return 1;
+    switch ( ch )
+    {
+    case '_':
+        return 1;
 
-	default:
-		return isalnum( (unsigned char) ch );
-	}
+    default:
+        return isalnum( (unsigned char) ch );
+    }
 }
 ~
