@@ -3,7 +3,7 @@ cpu    := $(shell uname -m)
 target := _bin/$(arch)-$(cpu)
 web    := web/com.quasi-literateprogramming
 
-version=2.0
+version=3.0
 
 all: legacy provisional final website
 
@@ -13,16 +13,17 @@ $(target)/quasi_legacy:
 	mkdir -p $(target)
 	gcc -o $(target)/quasi_legacy source/legacy/quasi-2.0.0.c
 
-provisional: $(target)/quasi_provisional
+provisional: legacy $(target)/quasi_provisional
 
-$(target)/quasi_provisional: legacy
+$(target)/quasi_provisional:
+	mkdir -p _gen/src/provisional
 	$(target)/quasi_legacy -f _gen/src/provisional source/mt/*.txt
 	gcc -o $(target)/quasi_provisional _gen/src/provisional/c/main.c
 
-final: $(target)/quasi
+final: provisional $(target)/quasi
 
-$(target)/quasi: provisional
-	echo "Target: $(target)/quasi_provisional"
+$(target)/quasi:
+	mkdir -p _gen/src/final
 	$(target)/quasi_provisional -f _gen/src/final source/mt/*.txt
 	gcc -o $(target)/quasi _gen/src/final/c/main.c
 
@@ -43,12 +44,14 @@ content:
 	echo "</pre></article>"                                         >> $(web)/_content/source/article.htm
 
 download:
-	mkdir -p $(web)/_resources/downloads/$(version)
-	cp _gen/src/final/c/main.c      $(web)/_resources/downloads/$(version)/quasi.c
-	cp _gen/src/final/php/Quasi.php $(web)/_resources/downloads/$(version)/Quasi.php.txt
+	mkdir -p source/archive/$(version) $(web)/_resources/downloads/$(version)
+	cp _gen/src/final/c/main.c             source/archive/$(version)/quasi.c
+	cp _gen/src/final/php/Quasi.php        source/archive/$(version)/quasi.php
+	cp source/archive/$(version)/quasi.c   $(web)/_resources/downloads/$(version)/quasi.c
+	cp source/archive/$(version)/quasi.php $(web)/_resources/downloads/$(version)/Quasi.php.txt
 
 public: website
 	rsync -avz $(web)/_content $(web)/_resources ../../_Public/com.quasi-literateprogramming
 
 clean:
-	rm -rf _gen
+	rm -rf _bin _gen _test
