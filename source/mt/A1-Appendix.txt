@@ -34,7 +34,11 @@ int createDirectories( char* dir )
     {
         if ( createDirectories( parentDirectory( dir ) ) )
         {
-            success = ! mkdir( dir, 0755 );
+            if ( mkdir( dir, 0755 ) )
+            {
+                perror( "Could not create target directory" );
+                success = 0;
+            }
         }
     }
     free( dir );
@@ -74,6 +78,17 @@ char* parentDirectory( const char* filepath )
     char*  ret = stringCopy( filepath );
     strcpy( ret, dirname( ret ) );
     return ret;
+}
+~
+
+... Print current directory
+
+~c/main.c~
+void printCurrentDirectory()
+{
+    char* cwd = getcwd( NULL, 0 );
+    fprintf( stderr, "-- [CWD: %s]\n", cwd );
+    free( cwd );
 }
 ~
 
@@ -135,6 +150,28 @@ char* readline( FILE* stream )
 }
 ~
 
+... String cat
+
+Returns a copy of the passed strings separated by 'sep'.
+
+~c/main.c~
+char* stringCat( const char* aString, const char* separatorString, const char* anotherString )
+{
+    int len1 = strlen( aString         );
+    int len2 = strlen( separatorString );
+    int len3 = strlen( anotherString   );
+    int len4 = len1 + len2 + len3 + 1;
+
+    char* ret = calloc( len4, sizeof( char ) );
+
+    strcat( ret, aString         );
+    strcat( ret, separatorString );
+    strcat( ret, anotherString   );
+
+    return ret;
+}
+~
+
 ... String copy
 
 Returns a copy of the passed string.
@@ -148,12 +185,157 @@ char* stringCopy( const char* aString )
 }
 ~
 
-... String prefix
+... String has prefix
 
 ~c/main.c~
 int stringHasPrefix( const char* aString, const char* prefix )
 {
     return (0 < strlen( prefix )) && (aString == strstr( aString, prefix ));
+}
+~
+
+... String has suffix
+
+~c/main.c~
+int stringHasSuffix( const char* aString, const char* suffix )
+{
+    int len1 = strlen( suffix );
+
+    if ( 0 == len1 )
+    {
+        return 0;
+    }
+    else
+    {
+        int len2 = strlen( aString );
+
+        if ( len1 > len2 )
+        {
+            return 0;
+        }
+        else
+        {
+            const char* _suffix = &(suffix [len1]);
+            const char* _string = &(aString[len2]);
+
+            //  "Some string with a suffix"
+            //                     "suffix"
+            //                            ^
+            //                           ^
+            //                          ^
+            //                         ^
+            //                        ^
+            //                       ^
+
+            do
+            {
+                _suffix--;
+                _string--;
+
+                if ( _suffix == suffix )
+                {
+                    return (*_suffix == *_string);
+                }
+            }
+            while ( *_suffix == *_string );
+
+            return 0;
+        }
+    }
+}
+~
+
+... String Trim
+
+Takes a copy of the string (
+
+~c/main.c~
+char* stringTrim( const char* aString )
+{
+    char* ret  = stringCopy( aString );
+    char* copy = stringCopy( aString );
+    {
+        int   len        = strlen( copy );
+        char* start      = copy;
+        char* end        = &(copy[len]);
+        int   trim_start = 1;
+        int   trim_end   = 1;
+
+        //  First increment pointer 'start' until
+        //  a non-whitespace character is encountered.
+
+        //   01234567890123
+        //  "   A String   "
+        //   ^
+        //      ^
+
+        do
+        {
+            switch( (char) *start )
+            {
+            case  ' ':
+            case '\n':
+            case '\t':
+                start++;
+                break;
+
+            case '\0':
+            default:
+                trim_start = 0;
+                break;
+            }
+
+        } while ( trim_start );
+
+        //  Then decrement pointer 'end' until
+        //  a non-whitespace character is encountered.
+
+        //   01234567890123
+        //  "   A String   "
+        //                 ^
+        //             ^
+
+        do
+        {
+            switch( *end )
+            {
+            case '\0':
+            case  ' ':
+            case '\n':
+            case '\t':
+                end--;
+                break;
+
+            default:
+                trim_end = 0;
+                break;
+            }
+
+            if ( start == end ) trim_end = 0;
+
+        } while ( trim_end );
+
+        //  Then increment pointer 'end' one
+        //  and set string terminator character.
+
+        //   01234567890123
+        //  "   A String   "
+        //      ^      ^
+        //      ^       ^
+        //  "   A String"
+
+        ++end;
+        *end = '\0';
+
+        //  Use 'strcpy' to copy string from 'start' to new termination
+        //  point into 'ret', which is guarenteed to be
+        //  at least as long as substring.
+
+        strcpy( ret, start );
+    }
+    free( copy );
+
+    return ret;
 }
 ~
 

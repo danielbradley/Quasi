@@ -12,7 +12,37 @@ cc -o quasi quasi-2.0.c
 ~
 
 ~html~      
-<a href='/resources/downloads/2.0/quasi.c'>Download quasi.c (v2.0)</a>
+<table>
+    <thead>
+        <tr>
+            <th>Date   </th>
+            <th>Version</th>
+            <th>Link   </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>2023-01-26</td>
+            <td>3.0</td>
+            <td><a href='/resources/downloads/3.0/quasi.c'>Download quasi.c</a></td>
+        </tr>
+        <tr>
+            <td>???</td>
+            <td>2.0.1</td>
+            <td><a href='/resources/downloads/2.0.1/quasi.c'>Download quasi.c</a></td>
+        </tr>
+        <tr>
+            <td>???</td>
+            <td>2.0.0</td>
+            <td><a href='/resources/downloads/2.0.0/quasi.c'>Download quasi.c</a></td>
+        </tr>
+        <tr>
+            <td>???</td>
+            <td>1.0.7</td>
+            <td><a href='/resources/downloads/1.0.7/quasi.c'>Download quasi.c</a></td>
+        </tr>
+    </tbody>
+</table>
 ~
 
 .. Quasi.php
