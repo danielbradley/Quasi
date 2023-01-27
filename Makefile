@@ -5,13 +5,13 @@ web    := web/com.quasi-literateprogramming
 
 version=3.0
 
-all: legacy provisional final website
+all: legacy provisional final
 
 legacy: $(target)/quasi_legacy
 
 $(target)/quasi_legacy:
 	mkdir -p $(target)
-	gcc -o $(target)/quasi_legacy source/legacy/quasi-2.0.0.c
+	gcc -o $(target)/quasi_legacy source/archive/2.0.0/quasi.c
 
 provisional: legacy $(target)/quasi_provisional
 
