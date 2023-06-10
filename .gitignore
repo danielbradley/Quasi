@@ -2,6 +2,7 @@ _bin
 _gen
 _content
 _resources
+_test
 bin
 libexec
 obj
