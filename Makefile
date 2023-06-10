@@ -11,7 +11,7 @@ legacy: $(target)/quasi_legacy
 
 $(target)/quasi_legacy:
 	mkdir -p $(target)
-	gcc -o $(target)/quasi_legacy source/legacy/quasi-2.0.0.c
+	gcc -o $(target)/quasi_legacy source/archive/2.0.0/quasi.c
 
 provisional: legacy $(target)/quasi_provisional
 
@@ -50,8 +50,15 @@ download:
 	cp source/archive/$(version)/quasi.c   $(web)/_resources/downloads/$(version)/quasi.c
 	cp source/archive/$(version)/quasi.php $(web)/_resources/downloads/$(version)/Quasi.php.txt
 
-public: website
+public: #website
 	rsync -avz $(web)/_content $(web)/_resources ../../_Public/com.quasi-literateprogramming
+
+testy:
+	rm -f $(target)/quasi
+	make final
+	mkdir -p _test/bin/$(arch)-$(cpu)
+	$(target)/quasi -f _test test/test.txt
+	gcc -o _test/bin/$(arch)-$(cpu)/hw -I _test/_dep/include _test/_dep/source/c/CacheString.c _test/source/c/main.c
 
 clean:
 	rm -rf _bin _gen _test
