@@ -1,0 +1,26 @@
+
+-       Quasi-Test
+--      Daniel Bradley (daniel@crossadaptive.com)
+
+.       Introduction
+
+~!source/c/main.c~
+#include <stdio.h>
+
+#include "CacheString.h"
+~
+
+~source/c/main.c~
+int main( int argc, char** argv )
+{
+    char* my_string = CacheString( "Hello world\n" );
+
+    printf( "%s\n", my_string );
+
+    CacheString_free( &my_string );
+}
+~
+
+[1]     Libcardinal - a foundational C library
+        https://quasisource.xenoserve.net/resources/downloads/libcardinal/latest/libcardinal.txt
+
