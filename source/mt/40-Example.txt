@@ -75,6 +75,9 @@ FILE*                    rejig( FILE* out, const char* baseDir, const char* line
 char*     generateSafeFilepath( const char* basedir, const char* line );
 int               doWeTruncate( const char* line );
 bool           isQuasiDownload( const char* line );
+void    pipeBPToSQLGenToStdOut( const char* bp );
+char*     canonicaliseSPGenURL( const char* url );
+void  downloadAndProcessSQLGen( const char* basedir, const char* line );
 void   downloadAndProcessQuasi( const char* basedir, const char* line );
 char*       createDownloadPath( const char* basedir );
 char*     createDependencyPath( const char* basedir );
@@ -119,6 +122,8 @@ The main function calls the appropriate functions as needed.
 ~c/main.c~
 int main( int argc, const char** argv )
 {
+    curl_global_init( CURL_GLOBAL_ALL );
+
     int status = 0;
 
     if ( processArguments( argc, argv ) )
@@ -137,6 +142,9 @@ int main( int argc, const char** argv )
     {
         status = usage();
     }
+
+    curl_global_cleanup();
+
     return !status;
 }
 ~
@@ -313,11 +321,32 @@ First, if "generateSafeFilepath" indicates a valid file name, any necessary dire
 If "doWeTruncate" returns true, the file is truncated on open.
 
 ~c/main.c~
+static FILE* stash = NULL;
+static char* bp    = NULL;
+
 FILE* rejig( FILE* out, const char* basedir, const char* line )
 {
     FILE* ret = NULL;
 
-    if ( out ) fclose( out );
+    if ( out )
+    {
+        fclose( out );
+
+        if ( stash )
+        {
+            FILE* stdout_orig = stdout;
+            {
+                stdout = stash;
+
+                pipeBPToSQLGenToStdOut( bp );
+            }
+            stdout = stdout_orig;
+
+            fclose( stash );
+            stash = NULL;
+            bp    = NULL;
+        }
+    }
 
     char* safeFilePath = generateSafeFilepath( basedir, line );
     if ( safeFilePath && createDirectories( parentDirectory( safeFilePath ) ) )
@@ -329,6 +358,20 @@ FILE* rejig( FILE* out, const char* basedir, const char* line )
         else
         {
             ret = fopen( safeFilePath, "a" );
+        }
+
+        if ( stringHasPrefix( line, "~!sqlgen|" ) || stringHasPrefix( line, "~sqlgen|" ) )
+        {
+            size_t size = 0;
+
+            if ( stash )
+            {
+                fprintf( stderr, "Error, unmatched sqlgen, aborting\n" );
+                exit( -1 );
+            }
+            
+            stash = ret;
+            ret   = open_memstream( &bp, &size );
         }
     }
     free( safeFilePath );
@@ -372,6 +415,20 @@ char* generateSafeFilepath( const char* basedir, const char* line )
 
             if ( token && ('!' == token[0]) ) token++;
 
+            if
+            (   token
+                && ('s' == token[0])
+                && ('q' == token[1])
+                && ('l' == token[2])
+                && ('g' == token[3])
+                && ('e' == token[4])
+                && ('n' == token[5])
+                && ('|' == token[6])
+            )
+            {
+                token = token + 7;
+            }
+
             if ( token && isAlphaNumeric( token[0] ) )
             {
                 full = calloc( len, sizeof( char ) );
@@ -405,8 +462,6 @@ char* generateSafeFilepath( const char* basedir, const char* line )
         }
     }
 
-
-
     return full;
 }
 ~
@@ -437,6 +492,58 @@ int doWeTruncate( const char* line )
         break;
     }
     return truncate;
+}
+~
+
+... SQLGen
+
+~c/main.c~
+void pipeBPToSQLGenToStdOut( const char* bp )
+{
+    char* host     = "http://sqlgen.azurewebsites.net/api/sqlgenerate/";
+    char* field    = "table_info=";
+    char* data     = canonicaliseSPGenURL( bp );
+
+    void* handle   = curl_easy_init();
+    char* encoded  = curl_easy_escape( handle, data, 0 );
+
+    char* postdata = calloc( strlen( field ) + strlen( encoded ) + 1, sizeof(char) );
+    {
+        sprintf( postdata, "%s%s", field, encoded );
+
+        curl_easy_setopt ( handle, CURLOPT_URL, host );
+        curl_easy_setopt ( handle, CURLOPT_POST, 1L );
+        curl_easy_setopt ( handle, CURLOPT_POSTFIELDS, postdata );
+        curl_easy_perform( handle );
+        curl_easy_cleanup( handle );
+    }
+    free( postdata );
+    curl_free( encoded );
+}
+~
+
+~c/main.c~
+char* canonicaliseSPGenURL( const char* url )
+{
+    int   len       = strlen( url );
+    char* canonical = calloc( len + 1, sizeof(char) );
+
+    int index = 0;
+    for ( int i=0; i < len; i++ )
+    {
+        switch ( url[i] )
+        {
+        case ' ':
+        case '\t':
+        case '\n':
+            break;
+
+        default:
+            canonical[index++] = url[i];
+        }
+    }
+
+    return canonical;
 }
 ~
 

@@ -1,11 +1,14 @@
-arch   := $(shell uname)
-cpu    := $(shell uname -m)
-target := _bin/$(arch)-$(cpu)
-web    := web/com.quasi-literateprogramming
+arch    := $(shell uname)
+cpu     := $(shell uname -m)
+target  := _bin/$(arch)-$(cpu)
+web     := web/com.quasi-literateprogramming
+base    := $(shell pwd)
+curl    := curl-7.72.0
+curldir := $(TMPDIR)/quasi
 
-version=3.0
+version=3.1
 
-all: legacy provisional final website
+all: legacy provisional final #website
 
 legacy: $(target)/quasi_legacy
 
@@ -15,17 +18,17 @@ $(target)/quasi_legacy:
 
 provisional: legacy $(target)/quasi_provisional
 
-$(target)/quasi_provisional:
+$(target)/quasi_provisional: curl
 	mkdir -p _gen/src/provisional
 	$(target)/quasi_legacy -f _gen/src/provisional source/mt/*.txt
-	gcc -o $(target)/quasi_provisional _gen/src/provisional/c/main.c
+	gcc $(curldir)/$(curl)/lib/.libs/libcurl.a -lldap -lz -o $(target)/quasi_provisional _gen/src/provisional/c/main.c
 
 final: provisional $(target)/quasi
 
-$(target)/quasi:
+$(target)/quasi: curl
 	mkdir -p _gen/src/final
 	$(target)/quasi_provisional -f _gen/src/final source/mt/*.txt
-	gcc -o $(target)/quasi _gen/src/final/c/main.c
+	gcc $(curldir)/$(curl)/lib/.libs/libcurl.a -lldap -lz -o $(target)/quasi _gen/src/final/c/main.c
 
 website: content download
 
@@ -62,3 +65,21 @@ testy:
 
 clean:
 	rm -rf _bin _gen _test
+
+
+
+#
+#	Third party libraries
+#
+
+curl: $(curldir)/$(curl) $(curldir)/$(curl)/config.status $(curldir)/$(curl)/lib/.libs/libcurl.a
+
+$(curldir)/$(curl):
+	mkdir $(curldir)
+	cd $(curldir); tar jxvf "$(base)/dep/curl-7.72.0.tar.bz2"
+
+$(curldir)/$(curl)/config.status:
+	cd $(curldir)/$(curl); ./configure --disable-shared --enable-static
+
+$(curldir)/$(curl)/lib/.libs/libcurl.a:
+	cd $(curldir)/$(curl); make
