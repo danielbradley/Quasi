@@ -5,7 +5,7 @@ web    := web/com.quasi-literateprogramming
 
 version=3.0
 
-all: legacy provisional final website
+all: legacy provisional final
 
 legacy: $(target)/quasi_legacy
 
