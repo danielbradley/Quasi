@@ -37,6 +37,7 @@ Quasi has now been reimplemented in pure C to maximise portability, allowing it 
 #include <dirent.h>
 #include <libgen.h>
 #include <unistd.h>
+#include <curl/curl.h>
 ~
 !
 
