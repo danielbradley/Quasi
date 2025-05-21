@@ -77,13 +77,13 @@ For example, this command would extract the following block of SQL:
 ```
 
 ```
-    users_table
+    ~users_table~
     CREATE TABLE users
     (
     USER        INT(11)  NOT NULL AUTO_INCREMENT
     PRIMARY KEY (USER)
     );
-    
+    ~
 ``` 
 
 This allowed the definitions of SQL tables and SQL Stored Procedures to be directly developed and documented within a requirements document.
@@ -101,12 +101,12 @@ For example, this command would extract the following block of source code and a
 ```
 
 ```
-    c/quasi.c
+    ~c/quasi.c~
     int main( int argc, char** argv )
     {
         return 0;
     }
-    
+    ~
 ```
 
 The tool does sanitation of the filenames, ensuring that parent directory ('..') commands aren't included and therefore that output files remain under the specified base directory.
@@ -118,9 +118,9 @@ If the specified base directory already exists the tool will exit with an error,
 If the identifier of the pre-formatted block section is prefixed by an exclamation mark the file is truncated on opening.
 It is advisable that when a file is truncated in this manner that the code fragment be a comment warning that the file is generated:
 ```
-    !c/quasi.c
+    ~!c/quasi.c~
     /*   !!!   Warning this file is auto-generated   !!!   */
-    
+    ~
 ```
 
 Quasi is implemented to process text files that use the MaxText text format [MaxText].
@@ -130,11 +130,11 @@ This is useful for hiding code comments, or perhaps includes.
     !
     Include various standard includes.
 
-    !c/quasi.c!
+    ~!c/quasi.c!~
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    
+    ~
     !
 ```
 
@@ -145,7 +145,7 @@ It is thought that an additional benefit of this approach is that it will enable
 
 Quasi has now been reimplemented in pure C to maximise portability, allowing it to act as the foundation of an organisation's development tool set.
 
-```!c/main.c
+```!c/main.c~
 /*   !!!   Warning generated from mtx source files   !!!   */
 ```
 
@@ -165,7 +165,7 @@ After the /BASE DIR/, one or more input files are specified for parsing.
 
 The following custom types are used:
 
-```c/main.c
+```c/main.c~
 typedef int bool;
 ```
 
@@ -175,7 +175,7 @@ Each of the command-line arguments corresponding to the source files are then pr
 During processing, the output files are opened and closed (rejig) as necessary.
 Each time a target file is created the filename must be appropriately sanitised (generateSafeFilepath) and it must be determined whether to truncate the file or not (doWeTruncate).
 
-```c/main.c
+```c/main.c~
 int           processArguments( int argc, const char** argv );
 int         canAccessDirectory( const char* baseDir, int force );
 int         processSourceFiles( const char* baseDir, int first, int last, const char** files );
@@ -194,14 +194,14 @@ char*        downloadQuasiFile( const char* line );
 If inappropriate arguments are passed, Quasi prints a usage message (usage) and exits with an error.
 Similarly, if the /base dir/ directory already exists, Quasi prints an error message (*errorDirectoryExists*) and exists with an error.
 
-```c/main.c
+```c/main.c~
 int                   usage();
 int    errorDirectoryExists();
 ```
 
 The following utility functions are also used (these are described in the appendix).
 
-```c/main.c
+```c/main.c~
 int       createDirectories(       char* safeFilePath );
 int        directory_exists( const char* path );
 char*       parentDirectory( const char* filepath );
@@ -218,7 +218,7 @@ int          isAlphaNumeric( char ch );
 During argument processing, the following global variables are initialised.
 /FORCE/ is initialised as true (1) if the '-f' flag was passed; FIRST is initialised to indicate the first source file argument in /argv/; and /BASE_DIR/ is initialised to the base directory argument.
 
-```c/main.c
+```c/main.c~
 int         FORCE;
 int         FIRST;
 const char* BASE_DIR;
@@ -226,7 +226,7 @@ const char* BASE_DIR;
 
 The main function calls the appropriate functions as needed.
 
-```c/main.c
+```c/main.c~
 int main( int argc, const char** argv )
 {
     int status = 0;
@@ -258,7 +258,7 @@ If the force argument is supplied, the global variable /FORCE/ is set to true (1
 then the global variable /BASE_DIR/ is initialised to the next argument.
 Finally, if there is at least one file argument remaining, the global variable /FIRST/ is initialised to identify it and the function returns true (1).
 
-```c/main.c
+```c/main.c~
 int processArguments( int argc, const char** argv )
 {
     int status             = 0;
@@ -288,7 +288,7 @@ First, an attempt is made to create the base directory.
 True (1) is returned if this succeeds, or if the directory already existed and /FORCE/ is true.
 Otherwise, the method returns false (0).
 
-```c/main.c
+```c/main.c~
 int canAccessDirectory( const char* baseDir, int force )
 {
     int status = 0;
@@ -314,7 +314,7 @@ int canAccessDirectory( const char* baseDir, int force )
 
 For each source file, the *processFile* function is called passing the /baseDir/ and the /source file/.
 
-```c/main.c
+```c/main.c~
 int processSourceFiles( const char* baseDir, int first, int last, const char** files )
 {
     int status = 1;
@@ -333,7 +333,7 @@ This procedure processes an individual source file.
 The file stream *in* is opened for the duration of the procedure, while the *out* file stream is only opened during the processing of a pre-formatted text block.
 
 The procedure reads lines from the *in* stream using the "readline" procedure.
-When a tilde () character is encountered, the system either opens, or closes, *out* by calling the "rejig" function, which rejigs the *out* stream.
+When a tilde (~) character is encountered, the system either opens, or closes, *out* by calling the "rejig" function, which rejigs the *out* stream.
 Each time a stream is closed a blank line is printed to the stream -- this allows the source to have spaces between chunks, while not having kludge whitespace in pre-formatted text blocks.
 
 When a tilde character doesn't start the line and the *out* stream is an open (not NULL) stream, the line is written out to the stream.
@@ -341,7 +341,7 @@ When a tilde character doesn't start the line and the *out* stream is an open (n
 If the /out/ file stream is not null when the loop exists it indicates that the previous pre-formatted block wasn't closed properly.
 This causes a warning message to be printed to /stderr/ and the function returns false (0).
 
-```c/main.c
+```c/main.c~
 int processFile( const char* baseDir, const char* sourceFile )
 {
     int status = 0;
@@ -386,7 +386,7 @@ int processFile( const char* baseDir, const char* sourceFile )
         if ( out )
         {
             fclose( out );
-            fprintf( stderr, "Warning: %s is unmatched ''\n", sourceFile );
+            fprintf( stderr, "Warning: %s is unmatched '~'\n", sourceFile );
         }
         status = (out == NULL);
     }
@@ -399,15 +399,15 @@ int processFile( const char* baseDir, const char* sourceFile )
 
 A line is considered a delimiter for a section of pre-formatted text
 if it begins with either:
-a tilde character ('') - the delimiter of MaxText formatted files;
+a tilde character ('~') - the delimiter of MaxText formatted files;
 or a triplet of back-tick characters ("```") - the delimiter for Markdown files.
 
-```c/main.c
+```c/main.c~
 int isPreformattedDelimiter( const char* line )
 {
     switch( line[0] )
     {
-    case '':
+    case '~':
         return 1;
 
     default:
@@ -422,7 +422,7 @@ This function closes /out/, then if the passed line contains a valid file name, 
 First, if "generateSafeFilepath" indicates a valid file name, any necessary directories are created, then the file is either opened or created.
 If "doWeTruncate" returns true, the file is truncated on open.
 
-```c/main.c
+```c/main.c~
 FILE* rejig( FILE* out, const char* basedir, const char* line )
 {
     FILE* ret = NULL;
@@ -462,7 +462,7 @@ therefore, when parsing Markdown files, the newline character is also passed as 
 
 If there are any problems NULL is returned.
 
-```c/main.c
+```c/main.c~
 typedef enum _Format { MARKDOWN, MAXTEXT } Format;
 
 char* generateSafeFilepath( const char* basedir, const char* line )
@@ -470,7 +470,7 @@ char* generateSafeFilepath( const char* basedir, const char* line )
     char* full = NULL;
     int   last = 0;
 
-    Format format = ('' == line[0]) ? MAXTEXT : MARKDOWN;
+    Format format = ('~' == line[0]) ? MAXTEXT : MARKDOWN;
 
     int len = strlen( basedir ) + strlen( line ) + 1;
     if ( NULL == strstr( line, ".." ) )
@@ -478,7 +478,7 @@ char* generateSafeFilepath( const char* basedir, const char* line )
         if ( NULL != strstr( line, "." ) )
         {
             char* test  = stringCopy( line );	
-            char* token = ('' == line[0]) ? strtok( test, "" ) : strtok( test, "`\n" );
+            char* token = ('~' == line[0]) ? strtok( test, "~" ) : strtok( test, "`\n" );
 
             if ( token && ('!' == token[0]) ) token++;
 
@@ -503,7 +503,7 @@ char* generateSafeFilepath( const char* basedir, const char* line )
                     break;
 
                 case MAXTEXT:
-                    if ( NULL == strtok( NULL, "" ) )
+                    if ( NULL == strtok( NULL, "~" ) )
                     {
                         free( full );
                         full = NULL;
@@ -525,14 +525,14 @@ char* generateSafeFilepath( const char* basedir, const char* line )
 
 The output file is truncated on open if the source file name is proceeded by an exclamation mark.
 
-```c/main.c
+```c/main.c~
 int doWeTruncate( const char* line )
 {
     int truncate = 0;
 
     switch( line[0] )
     {
-    case '':
+    case '~':
         if ( 2 < strlen( line ) )
         {
             truncate = ('!' == line[1]);
@@ -552,7 +552,7 @@ int doWeTruncate( const char* line )
 
 ##### Is Quasi Download
 
-```c/main.c
+```c/main.c~
 bool isQuasiDownload( const char* line )
 {
     bool is_download = 0;
@@ -572,7 +572,7 @@ bool isQuasiDownload( const char* line )
 
 ##### Download and Process Quasi
 
-```c/main.c
+```c/main.c~
 void downloadAndProcessQuasi( const char* basedir, const char* line )
 {
     char* current = getcwd( NULL, 0 );
@@ -627,7 +627,7 @@ void downloadAndProcessQuasi( const char* basedir, const char* line )
 
 ##### Create Download Path
 
-```c/main.c
+```c/main.c~
 char* createDownloadPath( const char* basedir )
 {
     const char* downloads_dir = "_downloads";
@@ -638,7 +638,7 @@ char* createDownloadPath( const char* basedir )
 
 ##### Create Dependency Path
 
-```c/main.c
+```c/main.c~
 char* createDependencyPath( const char* basedir )
 {
     const char* dependency_dir = "_dep";
@@ -649,7 +649,7 @@ char* createDependencyPath( const char* basedir )
 
 ##### Download Quasi File
 
-```c/main.c
+```c/main.c~
 char* downloadQuasiFile( const char* line )
 {
     char* download_file_path = 0;
@@ -687,7 +687,7 @@ Usage:
     quasi [-f] BASE_DIR INPUT_FILES
 ```
 
-```c/main.c
+```c/main.c~
 int usage()
 {
     const char* ch = "Usage:\n\t quasi [-f] BASE_DIR INPUT_FILES";
@@ -703,7 +703,7 @@ If the force ('-f') flag hasn't been passed, and the base directory already exis
     Error: directory already exists, or cannot be created!
 ```
 
-```c/main.c
+```c/main.c~
 int errorDirectoryExists()
 {
     const char* ch = "Error: directory already exists, or cannot be created!";
@@ -734,7 +734,7 @@ foreach ( $output as $path => $string )
 ```
 
 
-```php/Quasi.php
+```php/Quasi.php~
 function Quasi( $files, $suffix = "" )
 {
     $output = array();
@@ -759,7 +759,7 @@ function Process( &$output, $filepath, $suffix )
     {
         $linenum++;
 
-        if ( 0 < strlen( $line ) && ("" == $line[0]) )
+        if ( 0 < strlen( $line ) && ("~" == $line[0]) )
         {
             $inside = ! $inside;
 
@@ -920,7 +920,7 @@ Quasi uses the following generic auxiliary functions.
 
 This is a recursive procedure that finds the first existing directory, then unwinds creating the necessary directories.
 
-```c/main.c
+```c/main.c~
 int createDirectories( char* dir )
 {
     int success = 1;
@@ -944,7 +944,7 @@ int createDirectories( char* dir )
 
 A simple procedure that determines whether a directory exists or not.
 
-```c/main.c
+```c/main.c~
 int directory_exists( const char* path )
 {
     int status = 0;
@@ -966,7 +966,7 @@ Note: due to /dirname/ returning its own storage, can't just call:
     return stringcopy( dirname( filepath ) );
 ```
 
-```c/main.c
+```c/main.c~
 char* parentDirectory( const char* filepath )
 {
     char*  ret = stringCopy( filepath );
@@ -977,7 +977,7 @@ char* parentDirectory( const char* filepath )
 
 ##### Print current directory
 
-```c/main.c
+```c/main.c~
 void printCurrentDirectory()
 {
     char* cwd = getcwd( NULL, 0 );
@@ -998,7 +998,7 @@ If the line is longer than 1023 characters the buffer "line" is doubled in size 
 Easier to implement this, than worry about portability.
 From memory, the POSIX function is implemented differently on different systems.
 
-```c/main.c
+```c/main.c~
 char* readline( FILE* stream )
 {
     int  n     = 0;
@@ -1048,7 +1048,7 @@ char* readline( FILE* stream )
 
 Returns a copy of the passed strings separated by 'sep'.
 
-```c/main.c
+```c/main.c~
 char* stringCat( const char* aString, const char* separatorString, const char* anotherString )
 {
     int len1 = strlen( aString         );
@@ -1070,7 +1070,7 @@ char* stringCat( const char* aString, const char* separatorString, const char* a
 
 Returns a copy of the passed string.
 
-```c/main.c
+```c/main.c~
 char* stringCopy( const char* aString )
 {
     char* copy = calloc( strlen( aString) + 1, sizeof( char ) );
@@ -1081,7 +1081,7 @@ char* stringCopy( const char* aString )
 
 ##### String has prefix
 
-```c/main.c
+```c/main.c~
 int stringHasPrefix( const char* aString, const char* prefix )
 {
     return (0 < strlen( prefix )) && (aString == strstr( aString, prefix ));
@@ -1090,7 +1090,7 @@ int stringHasPrefix( const char* aString, const char* prefix )
 
 ##### String has suffix
 
-```c/main.c
+```c/main.c~
 int stringHasSuffix( const char* aString, const char* suffix )
 {
     int len1 = strlen( suffix );
@@ -1143,7 +1143,7 @@ int stringHasSuffix( const char* aString, const char* suffix )
 
 Takes a copy of the string (
 
-```c/main.c
+```c/main.c~
 char* stringTrim( const char* aString )
 {
     char* ret  = stringCopy( aString );
@@ -1235,7 +1235,7 @@ char* stringTrim( const char* aString )
 
 ##### Is AlphaNumeric
 
-```c/main.c
+```c/main.c~
 int isAlphaNumeric( char ch )
 {
     switch ( ch )
@@ -1255,9 +1255,9 @@ int isAlphaNumeric( char ch )
         http://en.wikipedia.org/wiki/Literate_programming
 
 [Web]		The CWEB System of Structured Documentation
-        http://www-cs-faculty.stanford.edu/uno/cweb.html
+        http://www-cs-faculty.stanford.edu/~uno/cweb.html
 
 [Noweb]		Noweb - A Simple, Extensible Tool for Literate Programming
-        http://www.cs.tufts.edu/nr/noweb/
+        http://www.cs.tufts.edu/~nr/noweb/
 
 [MaxText]	MaxText will be released publicly soon.
