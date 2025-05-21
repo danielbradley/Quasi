@@ -550,7 +550,7 @@ int doWeTruncate( const char* line )
 }
 ```
 
-##### Is Quasid Download
+##### Is Quasi Download
 
 ```c/main.c
 bool isQuasiDownload( const char* line )
@@ -569,6 +569,8 @@ bool isQuasiDownload( const char* line )
     return is_download;
 }
 ```
+
+##### Download and Process Quasi
 
 ```c/main.c
 void downloadAndProcessQuasi( const char* basedir, const char* line )
@@ -623,6 +625,8 @@ void downloadAndProcessQuasi( const char* basedir, const char* line )
 }
 ```
 
+##### Create Download Path
+
 ```c/main.c
 char* createDownloadPath( const char* basedir )
 {
@@ -632,6 +636,8 @@ char* createDownloadPath( const char* basedir )
 }
 ```
 
+##### Create Dependency Path
+
 ```c/main.c
 char* createDependencyPath( const char* basedir )
 {
@@ -640,6 +646,8 @@ char* createDependencyPath( const char* basedir )
     return stringCat( basedir, "/", dependency_dir );
 }
 ```
+
+##### Download Quasi File
 
 ```c/main.c
 char* downloadQuasiFile( const char* line )
