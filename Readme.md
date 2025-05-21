@@ -4,22 +4,26 @@
 
 [crossadaptive.com](https://crossadaptive.com)
 
-###	Copyright
+###   Front Matter
+
+####	Copyright
 
 Copyright 2011-2025, Daniel Robert Bradley.
 
-###	Last updated
+####	Last updated
 
 8 May 20205
 
-###	License
+####	License
 
 This software is released under the terms of the [GPLv3](License-GPLv3.txt).
 
-###	Disclaimer
+####	Disclaimer
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+###   Introduction
 
 Donald Knuth coined the term "literate programming" to refer to a programming approach whereby a programmer develops a program "in the order demanded by logic and flow of their thoughts" [Wikipedia].
 Rather than produce source code that is /commented/ with textual descriptions, a textual description is produced that describes the structure and semantics of code /chunks/ embedded within the prose.
